@@ -1,0 +1,14 @@
+services:
+  cxxjson:
+    image: registry.gitlab.com/attu/cxxjson
+    build:
+      context: ./docker
+    cap_add:
+    - SYS_PTRACE
+    command: bash
+    container_name: cxxjson
+    volumes:
+    - .:/cxxjson:rw
+    working_dir: /cxxjson
+    user: ${UID:-1001}:${GID:-1002}
+version: '3.4'

@@ -1,0 +1,8 @@
+*.gcov
+*.swo
+*.swp
+.lock*
+.waf*
+build
+core
+logs
