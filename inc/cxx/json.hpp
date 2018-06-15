@@ -89,12 +89,6 @@ namespace cxx
   using object = alternatives::apply<std::variant>;
 
   struct json : object {
-    struct error : virtual std::runtime_error {
-      using std::runtime_error::runtime_error;
-    };
-    struct bad_access : virtual error {
-      using error::error;
-    };
     using object::object;
     using object::operator=;
 
@@ -130,15 +124,7 @@ namespace cxx
                  return std::visit(std::forward<decltype(f)>(f), to_object(x));
                });
 
-  json& json::operator[](std::string const& key)
-  {
-    auto const func = overload(
-        [](auto const&) -> json& {
-          throw json::bad_access{"object does not support item access by string key"};
-        },
-        [&key](cxx::document& doc) -> json& { return doc.at(key); });
-    return cxx::visit(func, *this);
-  }
+  json& json::operator[](std::string const& key) { return cxx::get<cxx::document>(*this).at(key); }
 
   template <typename T,
             typename = std::enable_if_t<is_alternative<std::decay_t<T>> ||
