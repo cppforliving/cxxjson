@@ -16,16 +16,17 @@ TEST_CASE("can create cxx::json from std::initializer_list<cxx::json>")
 
 TEST_CASE("can create cxx::json from std::initializer_list<cxx::document::value_type>")
 {
+  using namespace cxx::literals;
   static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::document::value_type>>);
   cxx::json json = 42;
   REQUIRE(cxx::holds_alternative<std::int64_t>(json));
   json = {
       // clang-format off
-      {"lorem", 42},
-      {"ipsum", "dolor"},
-      {"sit", cxx::null},
-      {"amet", 3.14},
-      {"consectetur", true}
+      {"lorem"_key, 42},
+      {"ipsum"_key, "dolor"},
+      {"sit"_key, cxx::null},
+      {"amet"_key, 3.14},
+      {"consectetur"_key, true}
       // clang-format on
   };
   REQUIRE(cxx::holds_alternative<cxx::document>(json));

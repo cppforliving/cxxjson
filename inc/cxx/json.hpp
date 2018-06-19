@@ -84,6 +84,26 @@ namespace cxx
   constexpr bool operator==(null_t, null_t) noexcept { return true; }
   constexpr bool operator!=(null_t, null_t) noexcept { return false; }
 
+  inline namespace literals
+  {
+    constexpr auto operator""_key(std::string::const_pointer p, std::string::size_type s) noexcept
+    {
+      struct sec {
+      };
+      struct impl {
+        std::string::const_pointer const ptr;
+        std::string::size_type const size;
+        constexpr impl(sec, std::string::const_pointer x, std::string::size_type y)
+            : ptr(x), size(y)
+        {
+        }
+      };
+      return impl(sec{}, p, s);
+    }
+  }
+
+  using key = decltype(""_key);
+
   struct json;
 
   using document = std::map<std::string, json>;
@@ -109,6 +129,17 @@ namespace cxx
     using object::object;
     using object::operator=;
 
+    json(std::initializer_list<cxx::array::value_type> init) : json(cxx::array(std::move(init))) {}
+
+    json(std::initializer_list<std::pair<key const, json>> init) : json()
+    {
+      auto& doc = std::get<cxx::document>(static_cast<object&>(*this));
+      for (auto & [ k, v ] : init) {
+        doc.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
+                    std::forward_as_tuple(std::move(v)));
+      }
+    }
+
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
     json(T&& t) noexcept(noexcept(compatibile_alternative<std::decay_t<T>>{t}))
         : json(compatibile_alternative<std::decay_t<T>>{t})
@@ -117,13 +148,13 @@ namespace cxx
 
     json& operator=(std::initializer_list<cxx::array::value_type> init)
     {
-      static_cast<object&>(*this) = cxx::array(std::move(init));
+      static_cast<object&>(*this) = cxx::json(std::move(init));
       return *this;
     }
 
-    json& operator=(std::initializer_list<cxx::document::value_type> init)
+    json& operator=(std::initializer_list<std::pair<key const, json>> init)
     {
-      static_cast<object&>(*this) = cxx::document(std::move(init));
+      static_cast<object&>(*this) = cxx::json(std::move(init));
       return *this;
     }
 
@@ -162,19 +193,16 @@ namespace cxx
   auto const holds_alternative =
       [](json const& j) -> bool { return std::holds_alternative<T>(cxx::to_object(j)); };
 
-  json& json::operator[](std::string const& key) { return cxx::get<cxx::document>(*this).at(key); }
+  json& json::operator[](std::string const& k) { return cxx::get<cxx::document>(*this).at(k); }
 
-  json const& json::operator[](std::string const& key) const
+  json const& json::operator[](std::string const& k) const
   {
-    return cxx::get<cxx::document>(*this).at(key);
+    return cxx::get<cxx::document>(*this).at(k);
   }
 
-  json& json::operator[](std::size_t key) { return cxx::get<cxx::array>(*this).at(key); }
+  json& json::operator[](std::size_t k) { return cxx::get<cxx::array>(*this).at(k); }
 
-  json const& json::operator[](std::size_t key) const
-  {
-    return cxx::get<cxx::array>(*this).at(key);
-  }
+  json const& json::operator[](std::size_t k) const { return cxx::get<cxx::array>(*this).at(k); }
 
   std::size_t json::size() const noexcept
   {

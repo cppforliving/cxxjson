@@ -121,3 +121,42 @@ TEST_CASE("can create cxx::json from cxx::document")
   REQUIRE(doc == cxx::document({{"lorem"s, cxx::null}, {"ipsum"s, 3.14}}));
   REQUIRE(std::size(doc) == 2);
 }
+
+TEST_CASE("can create cxx::json from std::initializer_list<json>")
+{
+  static_assert(std::is_constructible_v<cxx::json, std::initializer_list<cxx::json>>);
+  cxx::json const json = {42, true, cxx::null, 3.14};
+
+  REQUIRE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(json == cxx::array({42, true, cxx::null, 3.14}));
+}
+
+TEST_CASE("can create cxx::json from std::initializer_list<std::pair<key, json>>")
+{
+  using namespace cxx::literals;
+  static_assert(
+      std::is_constructible_v<cxx::json,
+                              std::initializer_list<std::pair<cxx::key const, cxx::json>>>);
+  cxx::json const json = {
+      // clang-format off
+      {"lorem"_key, 42},
+      {"ipsum"_key, true},
+      {"dolor"_key, cxx::null},
+      {"sit"_key, 3.14}
+      // clang-format on
+  };
+
+  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(json ==
+          // clang-format off
+          cxx::document(
+            {
+              {"lorem", 42},
+              {"ipsum", true},
+              {"dolor", cxx::null},
+              {"sit", 3.14}
+            }
+          )
+          // clang-format on
+          );
+}
