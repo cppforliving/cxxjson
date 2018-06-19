@@ -6,6 +6,23 @@
 #include <vector>
 #include <map>
 
+namespace cxx::traits
+{
+  template <typename T, typename = void>
+  struct has_size : std::false_type {
+  };
+
+  template <typename T>
+  struct has_size<
+      T,
+      std::void_t<decltype(std::declval<std::size_t&>() = (std::declval<T const&>().size()))>>
+      : std::true_type {
+  };
+
+  template <typename T>
+  constexpr bool has_size_v = has_size<T>::value;
+}
+
 namespace cxx::meta
 {
   template <typename T>
@@ -93,9 +110,21 @@ namespace cxx
     using object::operator=;
 
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
-    explicit json(T&& t) noexcept(noexcept(compatibile_alternative<std::decay_t<T>>{t}))
+    json(T&& t) noexcept(noexcept(compatibile_alternative<std::decay_t<T>>{t}))
         : json(compatibile_alternative<std::decay_t<T>>{t})
     {
+    }
+
+    json& operator=(std::initializer_list<cxx::array::value_type> init)
+    {
+      static_cast<object&>(*this) = cxx::array(std::move(init));
+      return *this;
+    }
+
+    json& operator=(std::initializer_list<cxx::document::value_type> init)
+    {
+      static_cast<object&>(*this) = cxx::document(std::move(init));
+      return *this;
     }
 
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
@@ -107,6 +136,11 @@ namespace cxx
 
     json& operator[](std::string const&);
     json const& operator[](std::string const&) const;
+    json& operator[](std::size_t);
+    json const& operator[](std::size_t) const;
+
+    std::size_t size() const noexcept;
+    bool empty() const noexcept;
   };
 
   auto const to_object = overload([](json& x) -> object& { return x; },
@@ -124,7 +158,36 @@ namespace cxx
                  return std::visit(std::forward<decltype(f)>(f), to_object(x));
                });
 
+  template <typename T>
+  auto const holds_alternative =
+      [](json const& j) -> bool { return std::holds_alternative<T>(cxx::to_object(j)); };
+
   json& json::operator[](std::string const& key) { return cxx::get<cxx::document>(*this).at(key); }
+
+  json const& json::operator[](std::string const& key) const
+  {
+    return cxx::get<cxx::document>(*this).at(key);
+  }
+
+  json& json::operator[](std::size_t key) { return cxx::get<cxx::array>(*this).at(key); }
+
+  json const& json::operator[](std::size_t key) const
+  {
+    return cxx::get<cxx::array>(*this).at(key);
+  }
+
+  std::size_t json::size() const noexcept
+  {
+    auto const func =
+        cxx::overload([](cxx::null_t) -> std::size_t { return 0; },
+                      [](auto const& x) -> std::size_t {
+                        if
+                          constexpr(traits::has_size_v<decltype(x)>) return std::size(x);
+                        else
+                          return 1;
+                      });
+    return cxx::visit(func, *this);
+  }
 
   template <typename T,
             typename = std::enable_if_t<is_alternative<std::decay_t<T>> ||
