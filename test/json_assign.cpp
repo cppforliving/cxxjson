@@ -2,7 +2,33 @@
 #include "test/catch.hpp"
 #include <type_traits>
 
-TEST_CASE("can create cxx::json from std::initializer_list<cxx::json>")
+TEST_CASE("cxx::json is copy assignable")
+{
+  static_assert(std::is_copy_assignable_v<cxx::json>);
+  cxx::json const orig = 42;
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json != orig);
+
+  json = orig;
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json == orig);
+}
+
+TEST_CASE("cxx::json is nothrow move assignable")
+{
+  static_assert(std::is_nothrow_move_assignable_v<cxx::json>);
+  cxx::json orig = 42;
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json != orig);
+
+  json = std::move(orig);
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json == 42);
+}
+
+TEST_CASE("can assign std::initializer_list<cxx::json> to cxx::json")
 {
   static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::json>>);
   cxx::json json;
@@ -14,7 +40,7 @@ TEST_CASE("can create cxx::json from std::initializer_list<cxx::json>")
   REQUIRE(std::size(json) == 4);
 }
 
-TEST_CASE("can create cxx::json from std::initializer_list<cxx::document::value_type>")
+TEST_CASE("can assign std::initializer_list<cxx::document::value_type> to cxx::json")
 {
   using namespace cxx::literals;
   static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::document::value_type>>);
