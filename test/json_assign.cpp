@@ -28,6 +28,150 @@ TEST_CASE("cxx::json is nothrow move assignable")
   REQUIRE(json == 42);
 }
 
+TEST_CASE("can nothrow assign std::int64_t to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, std::int64_t>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json != 42);
+
+  json = 42l;
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json == 42);
+}
+
+TEST_CASE("can nothrow assign double to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, double>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<double>(json));
+  REQUIRE(json != 3.14);
+
+  json = 3.14;
+  REQUIRE(cxx::holds_alternative<double>(json));
+  REQUIRE(json == 3.14);
+}
+
+TEST_CASE("can nothrow assign cxx::null_t to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::null_t>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::null_t>(json));
+  REQUIRE(json != cxx::null);
+
+  json = cxx::null;
+  REQUIRE(cxx::holds_alternative<cxx::null_t>(json));
+  REQUIRE(json == cxx::null);
+}
+
+TEST_CASE("can nothrow assign bool to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, bool>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<bool>(json));
+  REQUIRE(json != true);
+
+  json = true;
+  REQUIRE(cxx::holds_alternative<bool>(json));
+  REQUIRE(json == true);
+}
+
+TEST_CASE("can assign std::string to cxx::json")
+{
+  static_assert(std::is_assignable_v<cxx::json, std::string>);
+  cxx::json json;
+  std::string const lorem = "lorem";
+  REQUIRE_FALSE(cxx::holds_alternative<std::string>(json));
+  REQUIRE(json != lorem);
+
+  json = lorem;
+  REQUIRE(cxx::holds_alternative<std::string>(json));
+  REQUIRE(json == lorem);
+}
+
+TEST_CASE("can nothrow assign std::string rvalue to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, std::string&&>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<std::string>(json));
+  REQUIRE(json != "lorem");
+
+  json = std::string("lorem");
+  REQUIRE(cxx::holds_alternative<std::string>(json));
+  REQUIRE(json == "lorem");
+}
+
+TEST_CASE("can assign cxx::array to cxx::json")
+{
+  static_assert(std::is_assignable_v<cxx::json, cxx::array>);
+  cxx::json json;
+  cxx::array const array = {42, cxx::null, "lorem", true};
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(json != array);
+
+  json = array;
+  REQUIRE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(json == array);
+}
+
+TEST_CASE("can nothrow assign cxx::array rvalue to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::array&&>);
+  cxx::json json;
+  cxx::array const array = {42, cxx::null, "lorem", true};
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(json != array);
+
+  cxx::array copy = array;
+  json = std::move(copy);
+
+  REQUIRE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(json == array);
+}
+
+TEST_CASE("can assign cxx::document to cxx::json")
+{
+  static_assert(std::is_assignable_v<cxx::json, cxx::document>);
+  cxx::json json = 42;
+  cxx::document const doc = {
+      // clang-format off
+      {"lorem", 42},
+      {"ipsum", cxx::null},
+      {"dolor", "sit"},
+      {"amet", true}
+      // clang-format on
+  };
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(json != doc);
+
+  json = doc;
+  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(json == doc);
+}
+
+TEST_CASE("can nothrow assign cxx::document rvalue to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::document&&>);
+  cxx::json json = 42;
+
+  cxx::document const doc = {
+      // clang-format off
+      {"lorem", 42},
+      {"ipsum", cxx::null},
+      {"dolor", "sit"},
+      {"amet", true}
+      // clang-format on
+  };
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(json != doc);
+
+  cxx::document copy = doc;
+  json = std::move(copy);
+
+  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(json == doc);
+}
+
 TEST_CASE("can assign std::initializer_list<cxx::json> to cxx::json")
 {
   static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::json>>);
