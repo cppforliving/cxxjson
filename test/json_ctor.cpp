@@ -30,7 +30,7 @@ TEST_CASE("can move construct cxx::json")
   REQUIRE(cxx::holds_alternative<cxx::document>(copy));
 }
 
-TEST_CASE("can create cxx::json from std::int64_t")
+TEST_CASE("can directly initialize cxx::json from std::int64_t")
 {
   static_assert(std::is_nothrow_constructible_v<cxx::json, std::int64_t>);
   std::int64_t const x = 42;
@@ -38,6 +38,13 @@ TEST_CASE("can create cxx::json from std::int64_t")
   REQUIRE(cxx::holds_alternative<std::int64_t>(json));
   REQUIRE(json == x);
   REQUIRE(std::size(json) == 1);
+}
+
+TEST_CASE("can copy initialize cxx::json from std::int64_t")
+{
+  cxx::json const json = 42l;
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json == 42l);
 }
 
 TEST_CASE("can create cxx::json from double")

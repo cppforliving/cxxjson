@@ -62,6 +62,8 @@ TEST_CASE("can nothrow assign cxx::null_t to cxx::json")
   json = cxx::null;
   REQUIRE(cxx::holds_alternative<cxx::null_t>(json));
   REQUIRE(json == cxx::null);
+  REQUIRE_FALSE(json != cxx::null);
+  REQUIRE_FALSE(cxx::null != cxx::null);
 }
 
 TEST_CASE("can nothrow assign bool to cxx::json")

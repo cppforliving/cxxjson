@@ -24,6 +24,9 @@ namespace cxx::traits
   constexpr bool is_equality_comparable_v = is_equality_comparable<T, U>::value;
 }
 
+static_assert(cxx::null == cxx::null);
+static_assert(!(cxx::null != cxx::null));
+
 static_assert(std::is_nothrow_default_constructible_v<cxx::json>);
 static_assert(std::is_nothrow_move_constructible_v<cxx::json>);
 static_assert(std::is_copy_constructible_v<cxx::json>);
