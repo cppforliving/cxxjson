@@ -209,14 +209,14 @@ namespace cxx
      *
      */
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
-    json(T&& t) noexcept(noexcept(compatibile_alternative<std::decay_t<T>>{t}))
-        : json(compatibile_alternative<std::decay_t<T>>{t})
+    json(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
+        : json(compatibile_alternative<T>{std::forward<T>(t)})
     {
     }
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
-    json& operator=(T const& t) noexcept(noexcept(compatibile_alternative<std::decay_t<T>>{t}))
+    json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
     {
-      this->object::emplace<compatibile_alternative<std::decay_t<T>>>(t);
+      emplace<compatibile_alternative<T>>(std::forward<T>(t));
       return *this;
     }
 
@@ -354,8 +354,7 @@ template <typename T>
 auto ::cxx::operator==(json const& j, T const& rhs) noexcept
     -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
 {
-  using type = std::conditional_t<is_alternative<std::decay_t<T>>, T,
-                                  compatibile_alternative<std::decay_t<T>>>;
+  using type = std::conditional_t<is_alternative<T>, T, compatibile_alternative<T>>;
   auto const func = [&rhs](auto const& lhs) -> bool {
     if
       constexpr(std::is_same_v<decltype(lhs), type const&>) return lhs == rhs;
