@@ -270,47 +270,29 @@ namespace cxx
   auto const holds_alternative =
       [](json const& j) -> bool { return std::holds_alternative<T>(cxx::to_object(j)); };
 
-  template <typename T,
-            typename = std::enable_if_t<is_alternative<std::decay_t<T>> ||
-                                        is_compatibile<std::decay_t<T>>>>
-  bool operator==(json const& j, T const& rhs) noexcept
-  {
-    using type = std::conditional_t<is_alternative<std::decay_t<T>>, T,
-                                    compatibile_alternative<std::decay_t<T>>>;
-    auto const func = [&rhs](auto const& lhs) -> bool {
-      if
-        constexpr(std::is_same_v<decltype(lhs), type const&>) return lhs == rhs;
-      else
-        return false;
-    };
-    return cxx::visit(func, j);
-  }
+  /*
+   *
+   */
+  template <typename T>
+  auto operator==(json const& j, T const& rhs) noexcept
+      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
 
-  template <typename T,
-            typename = std::enable_if_t<is_alternative<std::decay_t<T>> ||
-                                        is_compatibile<std::decay_t<T>>>>
-  bool operator==(T const& lhs, json const& rhs) noexcept
-  {
-    return rhs == lhs;
-  }
+  template <typename T>
+  auto operator==(T const& lhs, json const& rhs) noexcept
+      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
 
-  template <typename T,
-            typename = std::enable_if_t<is_alternative<std::decay_t<T>> ||
-                                        is_compatibile<std::decay_t<T>>>>
-  bool operator!=(json const& lhs, T const& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
+  template <typename T>
+  auto operator!=(json const& lhs, T const& rhs) noexcept
+      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
 
-  template <typename T,
-            typename = std::enable_if_t<is_alternative<std::decay_t<T>> ||
-                                        is_compatibile<std::decay_t<T>>>>
-  bool operator!=(T const& lhs, json const& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
+  template <typename T>
+  auto operator!=(T const& lhs, json const& rhs) noexcept
+      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
 }
 
+/*
+ *
+ */
 ::cxx::json::json(std::initializer_list<cxx::array::value_type> init)
     : json(cxx::array(std::move(init)))
 {
@@ -366,4 +348,40 @@ std::size_t::cxx::json::size() const noexcept
                         return 1;
                     });
   return cxx::visit(func, *this);
+}
+
+template <typename T>
+auto ::cxx::operator==(json const& j, T const& rhs) noexcept
+    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+{
+  using type = std::conditional_t<is_alternative<std::decay_t<T>>, T,
+                                  compatibile_alternative<std::decay_t<T>>>;
+  auto const func = [&rhs](auto const& lhs) -> bool {
+    if
+      constexpr(std::is_same_v<decltype(lhs), type const&>) return lhs == rhs;
+    else
+      return false;
+  };
+  return cxx::visit(func, j);
+}
+
+template <typename T>
+auto ::cxx::operator==(T const& lhs, json const& rhs) noexcept
+    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+{
+  return rhs == lhs;
+}
+
+template <typename T>
+auto ::cxx::operator!=(json const& lhs, T const& rhs) noexcept
+    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+{
+  return !(lhs == rhs);
+}
+
+template <typename T>
+auto ::cxx::operator!=(T const& lhs, json const& rhs) noexcept
+    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+{
+  return !(lhs == rhs);
 }
