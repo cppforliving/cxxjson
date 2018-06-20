@@ -167,3 +167,19 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<key, json>>
           // clang-format on
           );
 }
+
+TEST_CASE("can directly initialize cxx::json from int")
+{
+  static_assert(std::is_nothrow_constructible_v<cxx::json, int>);
+  int const x = 42;
+  cxx::json const json(x);
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json == x);
+}
+
+TEST_CASE("can copy initialize cxx::json from int")
+{
+  cxx::json const json = 42;
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json));
+  REQUIRE(json == 42);
+}
