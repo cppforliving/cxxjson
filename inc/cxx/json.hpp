@@ -129,33 +129,15 @@ namespace cxx
     using object::object;
     using object::operator=;
 
-    json(std::initializer_list<cxx::array::value_type> init) : json(cxx::array(std::move(init))) {}
-
-    json(std::initializer_list<std::pair<key const, json>> init) : json()
-    {
-      auto& doc = std::get<cxx::document>(static_cast<object&>(*this));
-      for (auto & [ k, v ] : init) {
-        doc.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
-                    std::forward_as_tuple(std::move(v)));
-      }
-    }
+    json(std::initializer_list<cxx::array::value_type>);
+    json(std::initializer_list<std::pair<key const, json>>);
+    json& operator=(std::initializer_list<cxx::array::value_type>);
+    json& operator=(std::initializer_list<std::pair<key const, json>>);
 
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
     json(T&& t) noexcept(noexcept(compatibile_alternative<std::decay_t<T>>{t}))
         : json(compatibile_alternative<std::decay_t<T>>{t})
     {
-    }
-
-    json& operator=(std::initializer_list<cxx::array::value_type> init)
-    {
-      static_cast<object&>(*this) = cxx::json(std::move(init));
-      return *this;
-    }
-
-    json& operator=(std::initializer_list<std::pair<key const, json>> init)
-    {
-      static_cast<object&>(*this) = cxx::json(std::move(init));
-      return *this;
     }
 
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
@@ -192,6 +174,29 @@ namespace cxx
   template <typename T>
   auto const holds_alternative =
       [](json const& j) -> bool { return std::holds_alternative<T>(cxx::to_object(j)); };
+
+  json::json(std::initializer_list<cxx::array::value_type> init) : json(cxx::array(std::move(init)))
+  {
+  }
+
+  json::json(std::initializer_list<std::pair<key const, json>> init) : json()
+  {
+    auto& doc = cxx::get<cxx::document>(*this);
+    for (auto & [ k, v ] : init) {
+      doc.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
+                  std::forward_as_tuple(std::move(v)));
+    }
+  }
+
+  json& json::operator=(std::initializer_list<cxx::array::value_type> init)
+  {
+    return (*this = cxx::json(std::move(init)));
+  }
+
+  json& json::operator=(std::initializer_list<std::pair<key const, json>> init)
+  {
+    return (*this = cxx::json(std::move(init)));
+  }
 
   json& json::operator[](std::string const& k) { return cxx::get<cxx::document>(*this).at(k); }
 
