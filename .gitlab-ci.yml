@@ -1,0 +1,40 @@
+image: registry.gitlab.com/attu/cxx
+
+stages:
+- test
+
+.template: &debug
+  before_script:
+  - source ./config/debug.sh
+
+.template: &release
+  before_script:
+  - source ./config/release.sh
+
+.template: &coverage
+  before_script:
+  - source ./config/coverage.sh
+  after_script:
+  - >-
+     gcovr
+     --branch
+     --root=build
+     --filter='.*cxx.*'
+     --print-summary
+
+.template: &build
+  stage: test
+  script:
+  - ./waf configure --prefix=usr build install --destdir=/
+
+test:debug:
+  <<: *debug
+  <<: *build
+
+test:release:
+  <<: *release
+  <<: *build
+
+test:coverage:
+  <<: *coverage
+  <<: *build

@@ -6,7 +6,6 @@ ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 RUN pacman -Syy --noconfirm \
  && pacman -S --noconfirm \
-        cgdb \
         gcc \
         make \
         python \
@@ -18,4 +17,3 @@ RUN mkdir /tmp/gcovr -p \
  && tar -C /tmp/gcovr -xzf /tmp/gcovr.tar.gz --strip-components 1 \
  && pip install /tmp/gcovr \
  && rm -rf /tmp/gcovr*
-
