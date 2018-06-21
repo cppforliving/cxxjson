@@ -11,6 +11,10 @@ stages:
   before_script:
   - source ./config/release.sh
 
+.template: &sanitize
+  before_script:
+  - source ./config/sanitize.sh
+
 .template: &coverage
   before_script:
   - source ./config/coverage.sh
@@ -33,6 +37,10 @@ test:debug:
 
 test:release:
   <<: *release
+  <<: *build
+
+test:sanitize:
+  <<: *sanitize
   <<: *build
 
 test:coverage:
