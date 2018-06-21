@@ -81,3 +81,43 @@ TEST_CASE("non-const cxx::json allows item access for string keys")
     REQUIRE(json["sit"]["consectetur"] == 7);
   }
 }
+
+TEST_CASE("const cxx::json allows item access for int keys")
+{
+  using namespace cxx::literals;
+  SECTION("throws exception if underlying object is not a array")
+  {
+    cxx::json const json = 42;
+    REQUIRE_THROWS_AS(json[42], std::bad_variant_access);
+  }
+  cxx::json const json = {42, cxx::null, "lorem", 3.14};
+
+  SECTION("throws exception for nonexisting key")
+  {
+    REQUIRE_THROWS_AS(json[42], std::out_of_range);
+  }
+  REQUIRE(json[0] == 42);
+  REQUIRE(json[1] == cxx::null);
+  REQUIRE(json[2] == "lorem");
+  REQUIRE(json[3] == 3.14);
+}
+
+TEST_CASE("non-const cxx::json allows item access for int keys")
+{
+  using namespace cxx::literals;
+  SECTION("throws exception if underlying object is not a array")
+  {
+    cxx::json json = 42;
+    REQUIRE_THROWS_AS(json[42], std::bad_variant_access);
+  }
+  cxx::json json = {42, cxx::null, "lorem", 3.14};
+
+  SECTION("throws exception for nonexisting key")
+  {
+    REQUIRE_THROWS_AS(json[42], std::out_of_range);
+  }
+  REQUIRE(json[0] == 42);
+  REQUIRE(json[1] == cxx::null);
+  REQUIRE(json[2] == "lorem");
+  REQUIRE(json[3] == 3.14);
+}
