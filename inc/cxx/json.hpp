@@ -193,6 +193,12 @@ namespace cxx
     using object::object;
     using object::operator=;
 
+    json() noexcept = default;
+    json(json const&) = default;
+    json(json&&) noexcept = default;
+    json& operator=(json const&) = default;
+    json& operator=(json&&) noexcept = default;
+
     /*
      *
      */
@@ -242,21 +248,21 @@ namespace cxx
   /*
    *
    */
-  auto const to_object = overload([](json& x) -> object& { return x; },
-                                  [](json const& x) -> object const& { return x; });
+  constexpr auto const to_object = overload([](json& x) -> object& { return x; },
+                                            [](json const& x) -> object const& { return x; });
 
   /*
    *
    */
   template <typename T>
-  auto const get =
+  constexpr auto const get =
       overload([](json const& x) -> decltype(auto) { return std::get<T>(to_object(x)); },
                [](json& x) -> decltype(auto) { return std::get<T>(to_object(x)); });
 
   /*
    *
    */
-  auto const visit =
+  constexpr auto const visit =
       overload([](auto&& f, json& x) -> decltype(
                    auto) { return std::visit(std::forward<decltype(f)>(f), to_object(x)); },
                [](auto&& f, json const& x) -> decltype(auto) {
@@ -267,7 +273,7 @@ namespace cxx
    *
    */
   template <typename T>
-  auto const holds_alternative =
+  constexpr auto const holds_alternative =
       [](json const& j) -> bool { return std::holds_alternative<T>(cxx::to_object(j)); };
 
   /*
@@ -293,68 +299,6 @@ namespace cxx
 /*
  *
  */
-::cxx::json::json(std::initializer_list<cxx::array::value_type> init)
-    : json(cxx::array(std::move(init)))
-{
-}
-
-::cxx::json::json(std::initializer_list<std::pair<key const, json>> init) : json()
-{
-  auto& doc = cxx::get<cxx::document>(*this);
-  for (auto & [ k, v ] : init) {
-    doc.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
-                std::forward_as_tuple(std::move(v)));
-  }
-}
-
-auto ::cxx::json::operator=(std::initializer_list<cxx::array::value_type> init) -> json&
-{
-  return (*this = cxx::json(std::move(init)));
-}
-
-auto ::cxx::json::operator=(std::initializer_list<std::pair<key const, json>> init) -> json&
-{
-  return (*this = cxx::json(std::move(init)));
-}
-
-auto ::cxx::json::operator[](std::string const& k) -> json&
-{
-  return cxx::get<cxx::document>(*this)[k];
-}
-
-auto ::cxx::json::operator[](std::string const& k) const -> json const&
-{
-  return cxx::get<cxx::document>(*this).at(k);
-}
-
-auto ::cxx::json::operator[](std::size_t k) -> json&
-{
-  return cxx::get<cxx::array>(*this).at(k);
-}
-
-auto ::cxx::json::operator[](std::size_t k) const -> json const&
-{
-  return cxx::get<cxx::array>(*this).at(k);
-}
-
-auto ::cxx::json::size() const noexcept -> std::size_t
-{
-  auto const func =
-      cxx::overload([](cxx::null_t) -> std::size_t { return 0; },
-                    [](auto const& x) -> std::size_t {
-                      if
-                        constexpr(traits::has_size_v<decltype(x)>) return std::size(x);
-                      else
-                        return 1;
-                    });
-  return cxx::visit(func, *this);
-}
-
-bool ::cxx::json::empty() const noexcept
-{
-  return size() == 0;
-}
-
 template <typename T>
 auto ::cxx::operator==(json const& j, T const& rhs) noexcept
     -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
