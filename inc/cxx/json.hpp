@@ -319,7 +319,7 @@ auto ::cxx::json::operator=(std::initializer_list<std::pair<key const, json>> in
 
 auto ::cxx::json::operator[](std::string const& k) -> json&
 {
-  return cxx::get<cxx::document>(*this).at(k);
+  return cxx::get<cxx::document>(*this)[k];
 }
 
 auto ::cxx::json::operator[](std::string const& k) const -> json const&
@@ -348,6 +348,11 @@ auto ::cxx::json::size() const noexcept -> std::size_t
                         return 1;
                     });
   return cxx::visit(func, *this);
+}
+
+bool ::cxx::json::empty() const noexcept
+{
+  return size() == 0;
 }
 
 template <typename T>
