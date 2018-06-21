@@ -337,7 +337,7 @@ auto ::cxx::json::operator[](std::size_t k) const -> json const&
   return cxx::get<cxx::array>(*this).at(k);
 }
 
-std::size_t::cxx::json::size() const noexcept
+auto ::cxx::json::size() const noexcept -> std::size_t
 {
   auto const func =
       cxx::overload([](cxx::null_t) -> std::size_t { return 0; },
