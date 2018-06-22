@@ -24,6 +24,7 @@ stages:
      --branch
      --root=build
      --filter='.*cxx.*'
+     --filter='.*src.*'
      --print-summary
 
 .template: &build
