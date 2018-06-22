@@ -15,6 +15,12 @@ stages:
   before_script:
   - source ./config/sanitize.sh
 
+.template: &benchmark
+  before_script:
+  - source ./config/release.sh
+  after_script:
+  - ./waf benchmark
+
 .template: &coverage
   before_script:
   - source ./config/coverage.sh
@@ -42,6 +48,10 @@ test:release:
 
 test:sanitize:
   <<: *sanitize
+  <<: *build
+
+test:benchmark:
+  <<: *benchmark
   <<: *build
 
 test:coverage:
