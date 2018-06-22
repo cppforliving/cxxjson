@@ -82,6 +82,15 @@ namespace detail
 auto ::cxx::cbor::encode(json const& j) noexcept -> byte_stream
 {
   byte_stream stream;
+  auto const alloc = cxx::overload(
+      [](cxx::array const& array) -> std::size_t {
+        return std::size(array) * sizeof(cxx::array::value_type);
+      },
+      [](cxx::document const& doc) -> std::size_t {
+        return std::size(doc) * sizeof(cxx::document::value_type);
+      },
+      [](auto const&) -> std::size_t { return sizeof(cxx::json); });
+  stream.reserve(cxx::visit(alloc, j));
   auto const func = [&stream](auto const& x) { detail::encode(x, stream); };
   cxx::visit(func, j);
   return stream;
