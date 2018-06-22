@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from waflib.Tools import waf_unit_test
+from waflib.Build import BuildContext
 import os
 
 VERSION = '0.1'
@@ -33,7 +34,7 @@ def configure(ctx):
     ctx.env.INCLUDES = [ctx.path.abspath(), './inc']
 
 
-def build(ctx):
+def cxx(ctx):
     incs = ctx.path.find_dir('inc')
     ctx.install_files(
         '${INCLUDEDIR}',
@@ -55,6 +56,10 @@ def build(ctx):
         use=['SRCLIB'],
         install_path='${LIBDIR}',
     )
+
+
+def build(ctx):
+    cxx(ctx)
 
     ctx(
         source=ctx.path.ant_glob(['test/test_main.cpp']),
@@ -78,3 +83,36 @@ def build(ctx):
 
     ctx.add_post_fun(waf_unit_test.summary)
     ctx.add_post_fun(waf_unit_test.set_exit_code)
+
+
+def benchmark(ctx):
+    cxx(ctx)
+
+    for suite in ctx.path.ant_glob(
+            ['benchmark/**/*.(c|cpp)']):
+        target, _ = suite.name.split('.')
+        ctx(
+            source=suite,
+            target='benchmark_' + target,
+            features='cxx cxxprogram test',
+            use=['SRCLIB'],
+            lib=['pthread', 'benchmark', 'benchmark_main'],
+            install_path=None
+        )
+
+    def summary(bld):
+        from waflib import Logs
+        lst = getattr(bld, 'utest_results', [])
+        for(f, code, out, err)in (lst or []):
+            Logs.pprint('CYAN', '<<=== %s ===>>' % f)
+            out = out.decode('utf-8')
+            Logs.pprint('CYAN', str(out))
+            Logs.pprint('CYAN', '')
+
+    ctx.add_post_fun(summary)
+    ctx.add_post_fun(waf_unit_test.set_exit_code)
+
+
+class Benchmark(BuildContext):
+    cmd = 'benchmark'
+    fun = 'benchmark'
