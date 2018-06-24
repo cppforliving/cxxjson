@@ -8,6 +8,7 @@ namespace
     struct type {
       static constexpr cxx::byte positive = 0;
       static constexpr cxx::byte negative = 1;
+      static constexpr cxx::byte string = 2;
     };
     cxx::byte additional : 5; // lower
     cxx::byte major : 3;      // higher
@@ -24,7 +25,7 @@ namespace
 
   auto const sum = [](auto const&... x) -> decltype(auto) { return (x + ...); };
 
-  std::uint64_t htonll(std::uint64_t x)
+  std::uint64_t htonll(std::uint64_t x) noexcept
   {
     return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
            htonl(static_cast<std::uint32_t>(x >> 32));
@@ -33,7 +34,7 @@ namespace
 
 namespace detail
 {
-  cxx::byte& encode_positive_integer(std::int64_t x, cxx::cbor::byte_stream& stream)
+  cxx::byte& encode_positive_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
     auto& init = stream.emplace_back(cxx::byte(x));
     if (x <= initial_byte::max_insitu) return init;
@@ -59,21 +60,30 @@ namespace detail
     return *(--it);
   }
 
-  cxx::byte& encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream)
+  cxx::byte& encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
     auto& data = encode_positive_integer(-x - 1, stream);
     initial(data)->major = initial_byte::type::negative;
     return data;
   }
 
-  cxx::byte& encode(std::int64_t x, cxx::cbor::byte_stream& stream)
+  cxx::byte& encode(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
     if (x < 0) return encode_negative_integer(x, stream);
     return encode_positive_integer(x, stream);
   }
 
+  cxx::byte& encode(std::string const& x, cxx::cbor::byte_stream& stream) noexcept
+  {
+    auto& data = encode_positive_integer(std::size(x), stream);
+    initial(data)->major = initial_byte::type::string;
+    auto first = reinterpret_cast<cxx::byte const*>(x.data());
+    stream.insert(std::end(stream), first, first + std::size(x));
+    return data;
+  }
+
   template <typename T>
-  cxx::byte encode(T const&, cxx::cbor::byte_stream&)
+  cxx::byte encode(T const&, cxx::cbor::byte_stream&) noexcept
   {
     return {};
   }
@@ -83,6 +93,7 @@ auto ::cxx::cbor::encode(json const& j) noexcept -> byte_stream
 {
   byte_stream stream;
   auto const alloc = cxx::overload(
+      [](std::string const& s) -> std::size_t { return std::size(s) * sizeof(std::int64_t) + 1; },
       [](cxx::array const& array) -> std::size_t {
         return std::size(array) * sizeof(cxx::array::value_type);
       },
