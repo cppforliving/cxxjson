@@ -1,4 +1,5 @@
 #include "inc/cxx/cbor.hpp"
+#include <algorithm>
 #include <arpa/inet.h>
 
 namespace
@@ -19,6 +20,7 @@ namespace
       static inline constexpr cxx::byte False = 0xf4;
       static inline constexpr cxx::byte True = 0xf5;
       static inline constexpr cxx::byte Null = 0xf6;
+      static inline constexpr cxx::byte ieee_754_double = 0xfb;
     };
 
     cxx::byte additional : 5; // lower
@@ -134,9 +136,13 @@ namespace detail
     stream.emplace_back(initial_byte::value::Null);
   }
 
-  template <typename T>
-  void encode(T const&, cxx::cbor::byte_stream&) noexcept
+  void encode(double d, cxx::cbor::byte_stream& stream) noexcept
   {
+    assure(stream, sizeof(double) + 1);
+    stream.emplace_back(initial_byte::value::ieee_754_double);
+    auto dest = stream.insert(std::end(stream), sizeof(double), cxx::byte());
+    auto const* first = reinterpret_cast<cxx::byte const*>(&d);
+    std::reverse_copy(first, first+sizeof(double), dest);
   }
 
   void encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept

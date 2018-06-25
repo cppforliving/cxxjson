@@ -125,6 +125,13 @@ TEST_CASE("cbor can encode strings")
                   'o',  'n',  's', 'e', 'c', 't', 'e', 't', 'u', 'r'}));
 }
 
+TEST_CASE("cbor can encode double")
+{
+  REQUIRE(cbor::encode(0.0) == stream({0xfb, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}));
+  REQUIRE(cbor::encode(1.0) == stream({0xfb, 0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}));
+  REQUIRE(cbor::encode(1.1) == stream({0xfb, 0x3f, 0xf1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9a}));
+}
+
 TEST_CASE("cbor can encode arrays")
 {
   REQUIRE(cbor::encode(cxx::array()) == stream({0x80}));

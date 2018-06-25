@@ -17,6 +17,7 @@ using Int = std::integral_constant<std::int64_t, N>;
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::null_t);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::true_type);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::false_type);
+BENCHMARK_TEMPLATE(cxx_cbor_encode, double);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::string);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::array);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::document);
