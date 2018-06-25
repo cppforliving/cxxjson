@@ -1,21 +1,34 @@
 image: registry.gitlab.com/attu/cxx
 
 stages:
+- build
 - test
+- post
 
 .template: &debug
+  stage: build
   before_script:
   - source ./config/debug.sh
 
 .template: &release
+  stage: build
   before_script:
   - source ./config/release.sh
 
 .template: &sanitize
+  stage: test
   before_script:
   - source ./config/sanitize.sh
 
+.template: &benchmark
+  stage: test
+  before_script:
+  - source ./config/release.sh
+  after_script:
+  - ./waf benchmark
+
 .template: &coverage
+  stage: post
   before_script:
   - source ./config/coverage.sh
   after_script:
@@ -24,10 +37,10 @@ stages:
      --branch
      --root=build
      --filter='.*cxx.*'
+     --filter='.*src.*'
      --print-summary
 
 .template: &build
-  stage: test
   script:
   - ./waf configure --prefix=usr build install --destdir=/
 
@@ -41,6 +54,10 @@ test:release:
 
 test:sanitize:
   <<: *sanitize
+  <<: *build
+
+test:benchmark:
+  <<: *benchmark
   <<: *build
 
 test:coverage:

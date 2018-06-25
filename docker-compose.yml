@@ -1,14 +1,21 @@
 services:
-  cxx:
+  base:
     image: registry.gitlab.com/attu/cxx
     build:
       context: ./docker
+  cxx:
+    build:
+      context: ./docker
+      dockerfile: develop
+      args:
+        USER: 1001
+        GROUP: 1002
     cap_add:
     - SYS_PTRACE
     command: bash
     container_name: cxx
     volumes:
-    - .:/cxx:rw
-    working_dir: /cxx
+    - .:/home/user/cxx:rw
+    working_dir: /home/user/cxx
     user: ${UID:-1001}:${GID:-1002}
 version: '3.4'
