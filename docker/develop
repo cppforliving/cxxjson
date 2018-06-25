@@ -1,0 +1,18 @@
+FROM registry.gitlab.com/attu/cxx
+
+ARG GROUP
+ARG USER
+
+RUN pacman -Syy --noconfirm \
+ && pacman -S --noconfirm cgdb \
+ && pacman -Scc --noconfirm \
+ && groupadd --gid ${GROUP} user \
+ && useradd --uid ${USER} \
+            --create-home \
+            --gid user \
+            --shell /bin/bash \
+            user
+
+VOLUME /home/user/cxx
+USER user
+WORKDIR /home/user/cxx
