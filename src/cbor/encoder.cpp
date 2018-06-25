@@ -11,6 +11,7 @@ namespace
       static constexpr cxx::byte string = 2;
       static constexpr cxx::byte unicode = 3;
       static constexpr cxx::byte array = 4;
+      static constexpr cxx::byte document = 5;
     };
     cxx::byte additional : 5; // lower
     cxx::byte major : 3;      // higher
@@ -32,11 +33,25 @@ namespace
     return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
            htonl(static_cast<std::uint32_t>(x >> 32));
   }
+
+  auto const available = [](cxx::cbor::byte_stream const& stream) {
+    return stream.capacity() - std::size(stream);
+  };
+
+  auto const append = [](cxx::cbor::byte_stream& stream,
+                         cxx::cbor::byte_stream::size_type const space) {
+    return stream.reserve(stream.capacity() + space);
+  };
+
+  auto const assure = [](cxx::cbor::byte_stream& stream,
+                         cxx::cbor::byte_stream::size_type const needed) {
+    if (available(stream) < needed) append(stream, needed);
+  };
 }
 
 namespace detail
 {
-  cxx::byte& encode(cxx::json const&, cxx::cbor::byte_stream&) noexcept;
+  void encode(cxx::json const&, cxx::cbor::byte_stream&) noexcept;
 
   cxx::byte& encode_positive_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
@@ -64,63 +79,57 @@ namespace detail
     return *(--it);
   }
 
-  cxx::byte& encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
+  void encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
-    auto& data = encode_positive_integer(-x - 1, stream);
-    initial(data)->major = initial_byte::type::negative;
-    return data;
+    initial(encode_positive_integer(-x - 1, stream))->major = initial_byte::type::negative;
   }
 
-  cxx::byte& encode(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
+    assure(stream, sizeof(std::int64_t) + 1);
     if (x < 0) return encode_negative_integer(x, stream);
-    return encode_positive_integer(x, stream);
+    encode_positive_integer(x, stream);
   }
 
-  cxx::byte& encode(std::string const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(std::string const& x, cxx::cbor::byte_stream& stream) noexcept
   {
-    auto& data = encode_positive_integer(std::size(x), stream);
-    initial(data)->major = initial_byte::type::string;
+    assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
+    initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::string;
     auto first = reinterpret_cast<cxx::byte const*>(x.data());
     stream.insert(std::end(stream), first, first + std::size(x));
-    return data;
   }
 
-  cxx::byte& encode(cxx::array const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::array const& x, cxx::cbor::byte_stream& stream) noexcept
   {
-    auto& data = encode_positive_integer(std::size(x), stream);
-    initial(data)->major = initial_byte::type::array;
+    assure(stream, sizeof(std::uint64_t) + 1 + std::size(x) * sizeof(cxx::json));
+    initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::array;
     for (auto const& item : x) ::detail::encode(item, stream);
-    return data;
+  }
+
+  void encode(cxx::document const& x, cxx::cbor::byte_stream& stream) noexcept
+  {
+    assure(stream, sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
+    initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::document;
+    for (auto const & [ key, value ] : x) {
+      ::detail::encode(key, stream);
+      ::detail::encode(value, stream);
+    }
   }
 
   template <typename T>
-  cxx::byte& encode(T const&, cxx::cbor::byte_stream&) noexcept
+  void encode(T const&, cxx::cbor::byte_stream&) noexcept
   {
-    static cxx::byte b;
-    return b;
   }
 
-  cxx::byte& encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept
   {
-    return cxx::visit(
-        [&stream](auto const& x) -> decltype(auto) { return detail::encode(x, stream); }, json);
+    cxx::visit([&stream](auto const& x) { ::detail::encode(x, stream); }, json);
   }
 }
 
 auto ::cxx::cbor::encode(json const& j) noexcept -> byte_stream
 {
   byte_stream stream;
-  auto const alloc = cxx::overload(
-      [](std::string const& s) -> std::size_t { return std::size(s) * sizeof(std::int64_t) + 1; },
-      [](cxx::array const& array) -> std::size_t {
-        return std::size(array) * sizeof(cxx::array::value_type);
-      },
-      [](cxx::document const& doc) -> std::size_t {
-        return std::size(doc) * sizeof(cxx::document::value_type);
-      },
-      [](auto const&) -> std::size_t { return sizeof(cxx::json); });
-  stream.reserve(cxx::visit(alloc, j));
-  detail::encode(j, stream);
+  ::detail::encode(j, stream);
   return stream;
 }
