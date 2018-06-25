@@ -4,15 +4,23 @@
 namespace
 {
   struct initial_byte {
-    static constexpr cxx::byte max_insitu = 23;
+    static inline constexpr cxx::byte max_insitu = 23;
     struct type {
-      static constexpr cxx::byte positive = 0;
-      static constexpr cxx::byte negative = 1;
-      static constexpr cxx::byte string = 2;
-      static constexpr cxx::byte unicode = 3;
-      static constexpr cxx::byte array = 4;
-      static constexpr cxx::byte document = 5;
+      static inline constexpr cxx::byte positive = 0;
+      static inline constexpr cxx::byte negative = 1;
+      static inline constexpr cxx::byte string = 2;
+      static inline constexpr cxx::byte unicode = 3;
+      static inline constexpr cxx::byte array = 4;
+      static inline constexpr cxx::byte document = 5;
+      static inline constexpr cxx::byte tag = 6;
+      static inline constexpr cxx::byte special = 7;
     };
+    struct value {
+      static inline constexpr cxx::byte False = 0xf4;
+      static inline constexpr cxx::byte True = 0xf5;
+      static inline constexpr cxx::byte Null = 0xf6;
+    };
+
     cxx::byte additional : 5; // lower
     cxx::byte major : 3;      // higher
   };
@@ -114,6 +122,16 @@ namespace detail
       ::detail::encode(key, stream);
       ::detail::encode(value, stream);
     }
+  }
+
+  void encode(bool b, cxx::cbor::byte_stream& stream) noexcept
+  {
+    stream.emplace_back(b ? initial_byte::value::True : initial_byte::value::False);
+  }
+
+  void encode(cxx::null_t, cxx::cbor::byte_stream& stream) noexcept
+  {
+    stream.emplace_back(initial_byte::value::Null);
   }
 
   template <typename T>
