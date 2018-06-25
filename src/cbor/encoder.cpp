@@ -9,6 +9,8 @@ namespace
       static constexpr cxx::byte positive = 0;
       static constexpr cxx::byte negative = 1;
       static constexpr cxx::byte string = 2;
+      static constexpr cxx::byte unicode = 3;
+      static constexpr cxx::byte array = 4;
     };
     cxx::byte additional : 5; // lower
     cxx::byte major : 3;      // higher
@@ -34,6 +36,8 @@ namespace
 
 namespace detail
 {
+  cxx::byte& encode(cxx::json const&, cxx::cbor::byte_stream&) noexcept;
+
   cxx::byte& encode_positive_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
     auto& init = stream.emplace_back(cxx::byte(x));
@@ -82,10 +86,25 @@ namespace detail
     return data;
   }
 
-  template <typename T>
-  cxx::byte encode(T const&, cxx::cbor::byte_stream&) noexcept
+  cxx::byte& encode(cxx::array const& x, cxx::cbor::byte_stream& stream) noexcept
   {
-    return {};
+    auto& data = encode_positive_integer(std::size(x), stream);
+    initial(data)->major = initial_byte::type::array;
+    for (auto const& item : x) ::detail::encode(item, stream);
+    return data;
+  }
+
+  template <typename T>
+  cxx::byte& encode(T const&, cxx::cbor::byte_stream&) noexcept
+  {
+    static cxx::byte b;
+    return b;
+  }
+
+  cxx::byte& encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept
+  {
+    return cxx::visit(
+        [&stream](auto const& x) -> decltype(auto) { return detail::encode(x, stream); }, json);
   }
 }
 
@@ -102,7 +121,6 @@ auto ::cxx::cbor::encode(json const& j) noexcept -> byte_stream
       },
       [](auto const&) -> std::size_t { return sizeof(cxx::json); });
   stream.reserve(cxx::visit(alloc, j));
-  auto const func = [&stream](auto const& x) { detail::encode(x, stream); };
-  cxx::visit(func, j);
+  detail::encode(j, stream);
   return stream;
 }
