@@ -2,6 +2,7 @@
 #include "test/catch.hpp"
 #include <type_traits>
 #include <limits>
+using namespace cxx::literals;
 
 using cbor = cxx::cbor;
 using stream = cbor::byte_stream;
@@ -102,4 +103,39 @@ TEST_CASE("cbor can encode negative integers")
     REQUIRE(cbor::encode(-0x1122334455667789) ==
             stream({0x3b, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}));
   }
+}
+
+TEST_CASE("cbor can encode null")
+{
+  REQUIRE(cbor::encode(cxx::null) == stream({0xf6}));
+}
+
+TEST_CASE("cbor can encode booleans")
+{
+  REQUIRE(cbor::encode(false) == stream({0xf4}));
+  REQUIRE(cbor::encode(true) == stream({0xf5}));
+}
+
+TEST_CASE("cbor can encode strings")
+{
+  REQUIRE(cbor::encode("lorem") == stream({0x45, 'l', 'o', 'r', 'e', 'm'}));
+  REQUIRE(cbor::encode("ipsum dolor sit amet consectetur") ==
+          stream({0x58, 0x20, 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o', 'l', 'o',
+                  'r',  ' ',  's', 'i', 't', ' ', 'a', 'm', 'e', 't', ' ', 'c',
+                  'o',  'n',  's', 'e', 'c', 't', 'e', 't', 'u', 'r'}));
+}
+
+TEST_CASE("cbor can encode arrays")
+{
+  REQUIRE(cbor::encode(cxx::array()) == stream({0x80}));
+  REQUIRE(cbor::encode({7}) == stream({0x81, 0x07}));
+  REQUIRE(cbor::encode({7, "lorem"}) == stream({0x82, 0x07, 0x45, 'l', 'o', 'r', 'e', 'm'}));
+}
+
+TEST_CASE("cbor can encode documents")
+{
+  REQUIRE(cbor::encode(cxx::document()) == stream({0xa0}));
+  REQUIRE(cbor::encode({{"lorem"_key, 42}, {"ipsum"_key, "dolor"}}) ==
+          stream({0xa2, 0x45, 'i',  'p', 's', 'u', 'm', 0x45, 'd',  'o', 'l',
+                  'o',  'r',  0x45, 'l', 'o', 'r', 'e', 'm',  0x18, 0x2a}));
 }
