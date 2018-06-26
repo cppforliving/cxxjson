@@ -7,14 +7,14 @@ namespace
   struct initial_byte {
     static inline constexpr cxx::byte max_insitu = 23;
     struct type {
-      static inline constexpr cxx::byte positive = 0;
+      // static inline constexpr cxx::byte positive = 0;
       static inline constexpr cxx::byte negative = 1;
       static inline constexpr cxx::byte string = 2;
-      static inline constexpr cxx::byte unicode = 3;
+      // static inline constexpr cxx::byte unicode = 3;
       static inline constexpr cxx::byte array = 4;
       static inline constexpr cxx::byte document = 5;
-      static inline constexpr cxx::byte tag = 6;
-      static inline constexpr cxx::byte special = 7;
+      // static inline constexpr cxx::byte tag = 6;
+      // static inline constexpr cxx::byte special = 7;
     };
     struct value {
       static inline constexpr cxx::byte False = 0xf4;
@@ -63,13 +63,13 @@ namespace detail
 {
   void encode(cxx::json const&, cxx::cbor::byte_stream&) noexcept;
 
-  cxx::byte& encode_positive_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
+  cxx::byte& encode_positive_integer(std::uint64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
     auto& init = stream.emplace_back(cxx::byte(x));
     if (x <= initial_byte::max_insitu) return init;
     auto const code = sum((x >> 32) != 0, (x >> 16) != 0, (x >> 8) != 0);
     init = cxx::byte(initial_byte::max_insitu + code + 1);
-    auto const space = (1 << code);
+    auto const space = (1u << code);
     auto it = stream.insert(std::end(stream), space, {});
     switch (code)
     {
@@ -91,14 +91,15 @@ namespace detail
 
   void encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
-    initial(encode_positive_integer(-x - 1, stream))->major = initial_byte::type::negative;
+    initial(encode_positive_integer(static_cast<std::uint64_t>(-x - 1), stream))->major =
+        initial_byte::type::negative;
   }
 
   void encode(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::int64_t) + 1);
     if (x < 0) return encode_negative_integer(x, stream);
-    encode_positive_integer(x, stream);
+    encode_positive_integer(static_cast<std::uint64_t>(x), stream);
   }
 
   void encode(std::string const& x, cxx::cbor::byte_stream& stream) noexcept
@@ -142,7 +143,7 @@ namespace detail
     stream.emplace_back(initial_byte::value::ieee_754_double);
     auto dest = stream.insert(std::end(stream), sizeof(double), cxx::byte());
     auto const* first = reinterpret_cast<cxx::byte const*>(&d);
-    std::reverse_copy(first, first+sizeof(double), dest);
+    std::reverse_copy(first, first + sizeof(double), dest);
   }
 
   void encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept

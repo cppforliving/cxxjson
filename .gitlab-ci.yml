@@ -5,6 +5,16 @@ stages:
 - test
 - post
 
+.template: &gcc
+  variables:
+    CXX: g++
+
+.template: &clang
+  variables:
+    CXXFLAGS: -stdlib=libc++
+    CXX: clang++
+    LINKFLAGS: -stdlib=libc++
+
 .template: &debug
   stage: build
   before_script:
@@ -44,22 +54,42 @@ stages:
   script:
   - ./waf configure --prefix=usr build install --destdir=/
 
-test:debug:
+gcc:debug:
+  <<: *gcc
   <<: *debug
   <<: *build
 
-test:release:
+gcc:release:
+  <<: *gcc
   <<: *release
   <<: *build
 
-test:sanitize:
+clang:debug:
+  <<: *clang
+  <<: *debug
+  <<: *build
+
+clang:release:
+  <<: *clang
+  <<: *release
+  <<: *build
+
+gcc:sanitize:
+  <<: *gcc
   <<: *sanitize
   <<: *build
 
-test:benchmark:
+clang:sanitize:
+  <<: *clang
+  <<: *sanitize
+  <<: *build
+
+gcc:benchmark:
+  <<: *gcc
   <<: *benchmark
   <<: *build
 
-test:coverage:
+gcc:coverage:
+  <<: *gcc
   <<: *coverage
   <<: *build

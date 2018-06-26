@@ -4,14 +4,21 @@ ADD https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_a
 RUN chmod +x /usr/bin/dumb-init
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
+ADD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=benchmark /tmp/benchmark/PKGBUILD
+ADD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=libc%2b%2b /tmp/libc++/PKGBUILD
+ADD https://github.com/gcovr/gcovr/archive/master.tar.gz /tmp/gcovr.tar.gz
+
 RUN pacman -Syy --noconfirm \
  && pacman -S --noconfirm \
+        clang \
         cmake \
         fakeroot \
         gcc \
         gmock \
         gtest \
+        libunwind \
         make \
+        ninja \
         python \
         python-pip \
  && pacman -Scc --noconfirm \
@@ -19,25 +26,35 @@ RUN pacman -Syy --noconfirm \
       --system \
       --no-create-home \
       --shell /usr/bin/bash \
-      builder
-
-ADD https://github.com/gcovr/gcovr/archive/master.tar.gz /tmp/gcovr.tar.gz
-RUN mkdir /tmp/gcovr -p \
+      builder \
+ && mkdir /tmp/gcovr -p \
  && tar -C /tmp/gcovr -xzf /tmp/gcovr.tar.gz --strip-components 1 \
  && pip install /tmp/gcovr \
- && rm -rf /tmp/gcovr*
-
-ADD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=benchmark /tmp/benchmark/PKGBUILD
-RUN chown -R builder /tmp/benchmark
-
-USER builder
-WORKDIR /tmp/benchmark
-
-RUN makepkg
+ && rm -rf /tmp/gcovr* \
+ && chown -R builder /tmp/benchmark \
+ && cd /tmp/benchmark \
+ && su builder -c 'makepkg --nocheck' \
+ && pacman --noconfirm -U \
+      /tmp/benchmark/benchmark-1.4.1-1-any.pkg.tar.xz \
+ && rm -rf /tmp/benchmark \
+ && chown -R builder /tmp/libc++ \
+ && cd /tmp/libc++ \
+ && su builder -c 'makepkg --nocheck --skippgpcheck' \
+ && pacman --noconfirm -U \
+      /tmp/libc++/libc++-6.0.0-1-x86_64.pkg.tar.xz \
+      /tmp/libc++/libc++abi-6.0.0-1-x86_64.pkg.tar.xz \
+      /tmp/libc++/libc++experimental-6.0.0-1-x86_64.pkg.tar.xz \
+ && rm -rf /tmp/libc++ \
+ && pacman -Rns --noconfirm \
+      cmake \
+      fakeroot \
+      gmock \
+      gtest \
+      libunwind \
+      make \
+      ninja \
+      python-pip \
+ && userdel builder
 
 WORKDIR /
 USER root
-
-RUN pacman --noconfirm -U \
-      /tmp/benchmark/benchmark-1.4.1-1-any.pkg.tar.xz \
- && rm -rf /tmp/benchmark

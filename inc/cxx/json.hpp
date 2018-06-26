@@ -173,25 +173,52 @@ namespace cxx
    *
    */
   template <typename T>
-  using compatibile_alternative = alternatives::find<traits::is_convertible_to<T>::template type>;
+  using compatibile_alternative =
+      std::conditional_t<is_alternative<std::decay_t<T>>,
+                         T,
+                         alternatives::find<traits::is_convertible_to<T>::template type>>;
 
   /*
-   *
-   */
+  *
+  */
   template <typename T>
-  constexpr bool is_compatibile =
-      !std::is_same_v<json, T> && !is_alternative<T> &&
-      alternatives::apply<traits::is_convertible_to<T>::template any_of>::value;
+  constexpr bool matches_alternative =
+      !std::is_same_v<json, std::decay_t<T>> &&
+      (is_alternative<std::decay_t<T>> ||
+       alternatives::apply<traits::is_convertible_to<std::decay_t<T>>::template any_of>::value);
+
+  /*
+  *
+  */
+  template <typename T>
+  constexpr bool is_compatibile = !is_alternative<T> && matches_alternative<T>;
 
   /*
    *
    */
   struct json : object {
+#if defined(__clang__)
+    /*
+    *
+    */
+    template <typename T, typename = std::enable_if_t<matches_alternative<T>>>
+    json(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
+        : object(compatibile_alternative<T>(std::forward<T>(t)))
+    {
+    }
+#else
+    using object::object;
+    using object::operator=;
+
     /*
      *
      */
-    using object::object;
-    using object::operator=;
+    template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
+    json(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
+        : json(compatibile_alternative<T>{std::forward<T>(t)})
+    {
+    }
+#endif
 
     json() noexcept = default;
     json(json const&) = default;
@@ -211,14 +238,6 @@ namespace cxx
     json(std::initializer_list<std::pair<key const, json>>);
     json& operator=(std::initializer_list<std::pair<key const, json>>);
 
-    /*
-     *
-     */
-    template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
-    json(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
-        : json(compatibile_alternative<T>{std::forward<T>(t)})
-    {
-    }
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
     json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
     {
