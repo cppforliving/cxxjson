@@ -1,7 +1,7 @@
 #include "inc/cxx/json.hpp"
 
 ::cxx::json::json(std::initializer_list<cxx::array::value_type> init)
-    : object(cxx::array(std::move(init)))
+    : storage(cxx::array(std::move(init)))
 {
 }
 
@@ -60,4 +60,13 @@ auto ::cxx::json::size() const noexcept -> std::size_t
 bool ::cxx::json::empty() const noexcept
 {
   return size() == 0;
+}
+bool ::cxx::operator==(json const& lhs, json const& rhs) noexcept
+{
+  return to_object(lhs) == to_object(rhs);
+}
+
+bool ::cxx::operator!=(json const& lhs, json const& rhs) noexcept
+{
+  return !(lhs == rhs);
 }
