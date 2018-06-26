@@ -182,16 +182,10 @@ namespace cxx
   *
   */
   template <typename T>
-  constexpr bool matches_alternative =
+  constexpr bool is_compatibile =
       !std::is_same_v<json, std::decay_t<T>> &&
       (is_alternative<std::decay_t<T>> ||
        alternatives::apply<traits::is_convertible_to<std::decay_t<T>>::template any_of>::value);
-
-  /*
-  *
-  */
-  template <typename T>
-  constexpr bool is_compatibile = !is_alternative<T> && matches_alternative<T>;
 
   /*
    *
@@ -206,7 +200,7 @@ namespace cxx
     /*
     *
     */
-    template <typename T, typename = std::enable_if_t<matches_alternative<T>>>
+    template <typename T, typename = std::enable_if_t<is_compatibile<T>>>
     json(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
         : storage(compatibile_alternative<T>(std::forward<T>(t)))
     {
@@ -230,8 +224,8 @@ namespace cxx
     json(std::initializer_list<std::pair<key const, json>>);
     json& operator=(std::initializer_list<std::pair<key const, json>>);
 
-    template <typename T, typename = std::enable_if_t<matches_alternative<T>>>
-    json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
+    template <typename T, typename = std::enable_if_t<is_compatibile<T>>>
+    json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
     {
       storage.emplace<compatibile_alternative<T>>(std::forward<T>(t));
       return *this;
@@ -296,19 +290,19 @@ namespace cxx
    */
   template <typename T>
   auto operator==(json const& j, T const& rhs) noexcept
-      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
+      -> std::enable_if_t<is_compatibile<T>, bool>;
 
   template <typename T>
   auto operator==(T const& lhs, json const& rhs) noexcept
-      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
+      -> std::enable_if_t<is_compatibile<T>, bool>;
 
   template <typename T>
   auto operator!=(json const& lhs, T const& rhs) noexcept
-      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
+      -> std::enable_if_t<is_compatibile<T>, bool>;
 
   template <typename T>
   auto operator!=(T const& lhs, json const& rhs) noexcept
-      -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>;
+      -> std::enable_if_t<is_compatibile<T>, bool>;
 }
 
 /*
@@ -316,7 +310,7 @@ namespace cxx
  */
 template <typename T>
 auto ::cxx::operator==(json const& j, T const& rhs) noexcept
-    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+    -> std::enable_if_t<is_compatibile<T>, bool>
 {
   using type = std::conditional_t<is_alternative<T>, T, compatibile_alternative<T>>;
   auto const func = [&rhs](auto const& lhs) -> bool {
@@ -330,21 +324,21 @@ auto ::cxx::operator==(json const& j, T const& rhs) noexcept
 
 template <typename T>
 auto ::cxx::operator==(T const& lhs, json const& rhs) noexcept
-    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+    -> std::enable_if_t<is_compatibile<T>, bool>
 {
   return rhs == lhs;
 }
 
 template <typename T>
 auto ::cxx::operator!=(json const& lhs, T const& rhs) noexcept
-    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+    -> std::enable_if_t<is_compatibile<T>, bool>
 {
   return !(lhs == rhs);
 }
 
 template <typename T>
 auto ::cxx::operator!=(T const& lhs, json const& rhs) noexcept
-    -> std::enable_if_t<is_alternative<T> || is_compatibile<T>, bool>
+    -> std::enable_if_t<is_compatibile<T>, bool>
 {
   return !(lhs == rhs);
 }
