@@ -140,7 +140,7 @@ namespace cxx
   /*
    *
    */
-  struct json;
+  class json;
 
   /*
    *
@@ -196,29 +196,21 @@ namespace cxx
   /*
    *
    */
-  struct json : object {
-#if defined(__clang__)
+  class json {
+    object storage;
+
+  public:
+    object& to_object() noexcept { return storage; }
+    object const& to_object() const noexcept { return storage; }
+
     /*
     *
     */
     template <typename T, typename = std::enable_if_t<matches_alternative<T>>>
     json(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
-        : object(compatibile_alternative<T>(std::forward<T>(t)))
+        : storage(compatibile_alternative<T>(std::forward<T>(t)))
     {
     }
-#else
-    using object::object;
-    using object::operator=;
-
-    /*
-     *
-     */
-    template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
-    json(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
-        : json(compatibile_alternative<T>{std::forward<T>(t)})
-    {
-    }
-#endif
 
     json() noexcept = default;
     json(json const&) = default;
@@ -241,7 +233,7 @@ namespace cxx
     template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
     json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
     {
-      emplace<compatibile_alternative<T>>(std::forward<T>(t));
+      storage.emplace<compatibile_alternative<T>>(std::forward<T>(t));
       return *this;
     }
 
@@ -267,8 +259,9 @@ namespace cxx
   /*
    *
    */
-  constexpr auto const to_object = overload([](json& x) -> object& { return x; },
-                                            [](json const& x) -> object const& { return x; });
+  constexpr auto const to_object =
+      overload([](json& x) -> object& { return x.to_object(); },
+               [](json const& x) -> object const& { return x.to_object(); });
 
   /*
    *
@@ -294,6 +287,9 @@ namespace cxx
   template <typename T>
   constexpr auto const holds_alternative =
       [](json const& j) -> bool { return std::holds_alternative<T>(cxx::to_object(j)); };
+
+  bool operator==(json const& lhs, json const& rhs) noexcept;
+  bool operator!=(json const& lhs, json const& rhs) noexcept;
 
   /*
    *

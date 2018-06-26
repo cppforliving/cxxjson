@@ -1,8 +1,10 @@
 image: registry.gitlab.com/attu/cxx
 
 stages:
-- build
-- test
+- build:gcc
+- build:clang
+- test:gcc
+- test:clang
 - post
 
 .template: &gcc
@@ -11,27 +13,27 @@ stages:
 
 .template: &clang
   variables:
-    CXXFLAGS: -stdlib=libc++
     CXX: clang++
-    LINKFLAGS: -stdlib=libc++
+
+.template: &libcxx
+  variables:
+    CXXFLAGS: -stdlib=libcxx
+    CXX: clang++
+    LINKFLAGS: -stdlib=libcxx
 
 .template: &debug
-  stage: build
   before_script:
   - source ./config/debug.sh
 
 .template: &release
-  stage: build
   before_script:
   - source ./config/release.sh
 
 .template: &sanitize
-  stage: test
   before_script:
   - source ./config/sanitize.sh
 
 .template: &benchmark
-  stage: test
   before_script:
   - source ./config/release.sh
   after_script:
@@ -55,37 +57,68 @@ stages:
   - ./waf configure --prefix=usr build install --destdir=/
 
 gcc:debug:
+  stage: build:gcc
   <<: *gcc
   <<: *debug
   <<: *build
 
 gcc:release:
+  stage: build:gcc
   <<: *gcc
   <<: *release
   <<: *build
 
-clang:debug:
+clang:libstdc++:debug:
+  stage: build:clang
   <<: *clang
   <<: *debug
   <<: *build
 
-clang:release:
+clang:libstdc++:release:
+  stage: build:clang
   <<: *clang
   <<: *release
   <<: *build
 
+clang:libcxx:debug:
+  stage: build:clang
+  <<: *libcxx
+  <<: *debug
+  <<: *build
+
+clang:libcxx:release:
+  stage: build:clang
+  <<: *libcxx
+  <<: *release
+  <<: *build
+
 gcc:sanitize:
+  stage: test:gcc
   <<: *gcc
   <<: *sanitize
   <<: *build
 
-clang:sanitize:
+clang:libstdc++:sanitize:
+  stage: test:clang
   <<: *clang
   <<: *sanitize
   <<: *build
 
+clang:libcxx:sanitize:
+  stage: test:clang
+  <<: *libcxx
+  <<: *sanitize
+  <<: *build
+
 gcc:benchmark:
+  stage: test:gcc
   <<: *gcc
+  <<: *benchmark
+  <<: *build
+
+clang:libstdc++:benchmark:
+  stage: test:clang
+  <<: *clang
   <<: *benchmark
   <<: *build
 
