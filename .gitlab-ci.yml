@@ -17,9 +17,9 @@ stages:
 
 .template: &libcxx
   variables:
-    CXXFLAGS: -stdlib=libcxx
+    CXXFLAGS: -stdlib=libc++
     CXX: clang++
-    LINKFLAGS: -stdlib=libcxx
+    LINKFLAGS: -stdlib=libc++
 
 .template: &debug
   before_script:
