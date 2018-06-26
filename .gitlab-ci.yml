@@ -126,3 +126,10 @@ gcc:coverage:
   <<: *gcc
   <<: *coverage
   <<: *build
+
+clang:fuzzer:
+  stage: post
+  <<: *clang
+  <<: *release
+  script:
+    - ./waf configure fuzzer

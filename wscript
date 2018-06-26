@@ -113,6 +113,28 @@ def benchmark(ctx):
     ctx.add_post_fun(waf_unit_test.set_exit_code)
 
 
+def fuzzer(ctx):
+    ctx.env.CXXFLAGS.extend(['-g', '-fsanitize=fuzzer,address,undefined'])
+    ctx.env.LINKFLAGS.extend(['-g', '-fsanitize=fuzzer,address,undefined'])
+    cxx(ctx)
+
+    for suite in ctx.path.ant_glob(
+            ['fuzzer/**/*.(c|cpp)']):
+        target, _ = suite.name.split('.')
+        ctx(
+            source=suite,
+            target='fuzzer_' + target,
+            features='cxx cxxprogram',
+            use=['SRCLIB'],
+            install_path=None
+        )
+
+
 class Benchmark(BuildContext):
     cmd = 'benchmark'
     fun = 'benchmark'
+
+
+class Fuzzer(BuildContext):
+    cmd = 'fuzzer'
+    fun = 'fuzzer'
