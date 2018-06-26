@@ -91,7 +91,7 @@ namespace detail
 
   void encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
   {
-    initial(encode_positive_integer(static_cast<std::uint64_t>(-x - 1), stream))->major =
+    initial(encode_positive_integer(static_cast<std::uint64_t>(-(x + 1)), stream))->major =
         initial_byte::type::negative;
   }
 
