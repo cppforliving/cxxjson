@@ -175,7 +175,7 @@ namespace cxx
   template <typename T>
   using compatibile_alternative =
       std::conditional_t<is_alternative<std::decay_t<T>>,
-                         T,
+                         std::decay_t<T>,
                          alternatives::find<traits::is_convertible_to<T>::template type>>;
 
   /*
@@ -230,7 +230,7 @@ namespace cxx
     json(std::initializer_list<std::pair<key const, json>>);
     json& operator=(std::initializer_list<std::pair<key const, json>>);
 
-    template <typename T, typename = std::enable_if_t<is_compatibile<std::decay_t<T>>>>
+    template <typename T, typename = std::enable_if_t<matches_alternative<T>>>
     json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>{std::forward<T>(t)}))
     {
       storage.emplace<compatibile_alternative<T>>(std::forward<T>(t));
