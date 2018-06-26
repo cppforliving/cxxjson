@@ -1,7 +1,7 @@
 #include "inc/cxx/json.hpp"
 
 ::cxx::json::json(std::initializer_list<cxx::array::value_type> init)
-    : json(cxx::array(std::move(init)))
+    : object(cxx::array(std::move(init)))
 {
 }
 

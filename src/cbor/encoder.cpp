@@ -142,7 +142,7 @@ namespace detail
     stream.emplace_back(initial_byte::value::ieee_754_double);
     auto dest = stream.insert(std::end(stream), sizeof(double), cxx::byte());
     auto const* first = reinterpret_cast<cxx::byte const*>(&d);
-    std::reverse_copy(first, first+sizeof(double), dest);
+    std::reverse_copy(first, first + sizeof(double), dest);
   }
 
   void encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept

@@ -15,6 +15,13 @@ stages:
   before_script:
   - source ./config/release.sh
 
+.template: &clang
+  stage: build
+  variables:
+    CXXFLAGS: -Wall -Wextra -std=c++17 -stdlib=libc++ -fno-rtti -fPIC
+    CXX: clang++
+    LINKFLAGS: -stdlib=libc++
+
 .template: &sanitize
   stage: test
   before_script:
@@ -50,6 +57,10 @@ test:debug:
 
 test:release:
   <<: *release
+  <<: *build
+
+test:clang:
+  <<: *clang
   <<: *build
 
 test:sanitize:
