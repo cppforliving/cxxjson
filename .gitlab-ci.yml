@@ -1,10 +1,9 @@
 image: registry.gitlab.com/attu/cxx
 
 stages:
-- build:gcc
-- build:clang
-- test:gcc
-- test:clang
+- build
+- sanitize
+- benchmark
 - post
 
 .template: &gcc
@@ -30,10 +29,12 @@ stages:
   - source ./config/release.sh
 
 .template: &sanitize
+  stage: sanitize
   before_script:
   - source ./config/sanitize.sh
 
 .template: &benchmark
+  stage: benchmark
   before_script:
   - source ./config/release.sh
   after_script:
@@ -57,67 +58,62 @@ stages:
   - ./waf configure --prefix=usr build install --destdir=/
 
 gcc:debug:
-  stage: build:gcc
+  stage: build
   <<: *gcc
   <<: *debug
   <<: *build
 
 gcc:release:
-  stage: build:gcc
+  stage: build
   <<: *gcc
   <<: *release
   <<: *build
 
 clang:libstdc++:debug:
-  stage: build:clang
+  stage: build
   <<: *clang
   <<: *debug
   <<: *build
 
 clang:libstdc++:release:
-  stage: build:clang
+  stage: build
   <<: *clang
   <<: *release
   <<: *build
 
 clang:libcxx:debug:
-  stage: build:clang
+  stage: build
   <<: *libcxx
   <<: *debug
   <<: *build
 
 clang:libcxx:release:
-  stage: build:clang
+  stage: build
   <<: *libcxx
   <<: *release
   <<: *build
 
 gcc:sanitize:
-  stage: test:gcc
   <<: *gcc
   <<: *sanitize
   <<: *build
 
 clang:libstdc++:sanitize:
-  stage: test:clang
   <<: *clang
   <<: *sanitize
   <<: *build
 
 clang:libcxx:sanitize:
-  stage: test:clang
   <<: *libcxx
   <<: *sanitize
   <<: *build
 
 gcc:benchmark:
-  stage: test:gcc
   <<: *gcc
   <<: *benchmark
   <<: *build
 
 clang:libstdc++:benchmark:
-  stage: test:clang
   <<: *clang
   <<: *benchmark
   <<: *build
@@ -126,3 +122,10 @@ gcc:coverage:
   <<: *gcc
   <<: *coverage
   <<: *build
+
+clang:fuzzer:
+  stage: post
+  <<: *clang
+  <<: *release
+  script:
+    - ./waf configure fuzzer
