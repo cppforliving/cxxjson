@@ -3,8 +3,8 @@ image: registry.gitlab.com/attu/cxx
 stages:
 - build:gcc
 - build:clang
-- test:gcc
-- test:clang
+- sanitize
+- benchmark
 - post
 
 .template: &gcc
@@ -30,10 +30,12 @@ stages:
   - source ./config/release.sh
 
 .template: &sanitize
+  stage: sanitize
   before_script:
   - source ./config/sanitize.sh
 
 .template: &benchmark
+  stage: benchmark
   before_script:
   - source ./config/release.sh
   after_script:
@@ -93,31 +95,26 @@ clang:libcxx:release:
   <<: *build
 
 gcc:sanitize:
-  stage: test:gcc
   <<: *gcc
   <<: *sanitize
   <<: *build
 
 clang:libstdc++:sanitize:
-  stage: test:clang
   <<: *clang
   <<: *sanitize
   <<: *build
 
 clang:libcxx:sanitize:
-  stage: test:clang
   <<: *libcxx
   <<: *sanitize
   <<: *build
 
 gcc:benchmark:
-  stage: test:gcc
   <<: *gcc
   <<: *benchmark
   <<: *build
 
 clang:libstdc++:benchmark:
-  stage: test:clang
   <<: *clang
   <<: *benchmark
   <<: *build
