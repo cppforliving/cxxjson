@@ -51,6 +51,17 @@ std::string do_make(byte_view bytes)
   return std::string(reinterpret_cast<char const*>(bytes.data()), size);
 }
 
+cxx::json make(cxx::json::byte_stream stream, byte_view bytes)
+{
+  if (bytes.size() < 3) return cxx::json::byte_stream{};
+  auto const tag = static_cast<std::size_t>(bytes.front());
+  bytes.remove_prefix(1);
+  auto const size = std::min(tag, std::size(bytes));
+  auto const first = reinterpret_cast<cxx::json::byte_stream::const_pointer>(bytes.data());
+  stream.insert(std::end(stream), first, first + size);
+  return cxx::json(std::move(stream));
+}
+
 cxx::json make(std::string, byte_view bytes)
 {
   return cxx::json{do_make(bytes)};
@@ -109,6 +120,9 @@ cxx::json factory(byte_view bytes)
       break;
     case 5:
       return make(cxx::json::document{}, bytes);
+      break;
+    case 6:
+      return make(cxx::json::byte_stream{}, bytes);
       break;
     default:
       return make(std::string{}, bytes);
