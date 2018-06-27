@@ -1,6 +1,7 @@
 #pragma once
 
 #include <variant>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -103,17 +104,6 @@ namespace cxx
   template <typename... F>
   overload(F...)->overload<F...>;
 
-  /*
-   *
-   */
-  enum class null_t
-  {
-  };
-  constexpr null_t null{};
-
-  constexpr bool operator==(null_t, null_t) noexcept { return true; }
-  constexpr bool operator!=(null_t, null_t) noexcept { return false; }
-
   inline namespace literals
   {
     /*
@@ -135,74 +125,86 @@ namespace cxx
     }
   }
 
-  using key = decltype(""_key);
+  /*
+   *
+   */
+  using byte = std::byte;
 
   /*
    *
    */
-  class json;
+  struct json {
+    /*
+     *
+     */
+    struct null_t {
+      constexpr bool operator==(null_t) const noexcept { return true; }
+      constexpr bool operator!=(null_t) const noexcept { return false; }
+    };
+    static constexpr null_t null{};
 
-  /*
-   *
-   */
-  using document = std::map<std::string, json>;
+    /*
+     *
+     */
+    using byte_stream = std::vector<cxx::byte>;
 
-  /*
-   *
-   */
-  using array = std::vector<json>;
+    /*
+     *
+     */
+    using document = std::map<std::string, json>;
 
-  /*
-   *
-   */
-  using alternatives =
-      meta::type_list<document, std::int64_t, array, std::string, double, bool, null_t>;
+    /*
+     *
+     */
+    using array = std::vector<json>;
 
-  /*
-   *
-   */
-  using object = alternatives::apply<std::variant>;
+    /*
+     *
+     */
+    using alternatives =
+        meta::type_list<document, std::int64_t, array, std::string, double, bool, null_t>;
 
-  /*
-   *
-   */
-  template <typename T>
-  constexpr auto is_alternative = alternatives::contains<T>;
+    /*
+     *
+     */
+    using key = decltype(""_key);
 
-  /*
-   *
-   */
-  template <typename T>
-  using compatibile_alternative =
-      std::conditional_t<is_alternative<std::decay_t<T>>,
-                         std::decay_t<T>,
-                         alternatives::find<traits::is_convertible_to<T>::template type>>;
+    template <typename T>
+    static constexpr auto is_alternative = json::alternatives::contains<T>;
 
-  /*
-  *
-  */
-  template <typename T>
-  constexpr bool is_compatibile =
-      !std::is_same_v<json, std::decay_t<T>> &&
-      (is_alternative<std::decay_t<T>> ||
-       alternatives::apply<traits::is_convertible_to<std::decay_t<T>>::template any_of>::value);
+    /*
+     *
+     */
+    template <typename T>
+    using compatibile_alternative =
+        std::conditional_t<json::is_alternative<std::decay_t<T>>,
+                           std::decay_t<T>,
+                           json::alternatives::find<traits::is_convertible_to<T>::template type>>;
 
-  /*
-   *
-   */
-  class json {
-    object storage;
+    /*
+     *
+     */
+    template <typename T>
+    static constexpr bool is_compatibile =
+        !std::is_same_v<json, std::decay_t<T>> &&
+        (json::is_alternative<std::decay_t<T>> ||
+         json::alternatives::apply<
+             traits::is_convertible_to<std::decay_t<T>>::template any_of>::value);
 
-  public:
+    /*
+     *
+     */
+    using object = json::alternatives::apply<std::variant>;
+
     object& to_object() noexcept { return storage; }
     object const& to_object() const noexcept { return storage; }
 
     /*
-    *
-    */
-    template <typename T, typename = std::enable_if_t<is_compatibile<T>>>
-    json(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
-        : storage(compatibile_alternative<T>(std::forward<T>(t)))
+     *
+     */
+    template <typename T, typename = std::enable_if_t<json::is_compatibile<T>>>
+    json(T&& t) noexcept(noexcept(json::compatibile_alternative<T>(std::forward<T>(t))))
+        : storage(json::compatibile_alternative<T>(std::forward<T>(t)))
     {
     }
 
@@ -215,19 +217,19 @@ namespace cxx
     /*
      *
      */
-    json(std::initializer_list<cxx::array::value_type>);
-    json& operator=(std::initializer_list<cxx::array::value_type>);
+    json(std::initializer_list<cxx::json::array::value_type>);
+    json& operator=(std::initializer_list<cxx::json::array::value_type>);
 
     /*
      *
      */
-    json(std::initializer_list<std::pair<key const, json>>);
-    json& operator=(std::initializer_list<std::pair<key const, json>>);
+    json(std::initializer_list<std::pair<json::key const, json>>);
+    json& operator=(std::initializer_list<std::pair<json::key const, json>>);
 
-    template <typename T, typename = std::enable_if_t<is_compatibile<T>>>
-    json& operator=(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
+    template <typename T, typename = std::enable_if_t<json::is_compatibile<T>>>
+    json& operator=(T&& t) noexcept(noexcept(json::compatibile_alternative<T>(std::forward<T>(t))))
     {
-      storage.emplace<compatibile_alternative<T>>(std::forward<T>(t));
+      storage.emplace<json::compatibile_alternative<T>>(std::forward<T>(t));
       return *this;
     }
 
@@ -248,14 +250,17 @@ namespace cxx
      */
     std::size_t size() const noexcept;
     bool empty() const noexcept;
+
+  private:
+    object storage;
   };
 
   /*
    *
    */
   constexpr auto const to_object =
-      overload([](json& x) -> object& { return x.to_object(); },
-               [](json const& x) -> object const& { return x.to_object(); });
+      overload([](json& x) -> json::object& { return x.to_object(); },
+               [](json const& x) -> json::object const& { return x.to_object(); });
 
   /*
    *
@@ -290,19 +295,19 @@ namespace cxx
    */
   template <typename T>
   auto operator==(json const& j, T const& rhs) noexcept
-      -> std::enable_if_t<is_compatibile<T>, bool>;
+      -> std::enable_if_t<json::is_compatibile<T>, bool>;
 
   template <typename T>
   auto operator==(T const& lhs, json const& rhs) noexcept
-      -> std::enable_if_t<is_compatibile<T>, bool>;
+      -> std::enable_if_t<json::is_compatibile<T>, bool>;
 
   template <typename T>
   auto operator!=(json const& lhs, T const& rhs) noexcept
-      -> std::enable_if_t<is_compatibile<T>, bool>;
+      -> std::enable_if_t<json::is_compatibile<T>, bool>;
 
   template <typename T>
   auto operator!=(T const& lhs, json const& rhs) noexcept
-      -> std::enable_if_t<is_compatibile<T>, bool>;
+      -> std::enable_if_t<json::is_compatibile<T>, bool>;
 }
 
 /*
@@ -310,9 +315,9 @@ namespace cxx
  */
 template <typename T>
 auto ::cxx::operator==(json const& j, T const& rhs) noexcept
-    -> std::enable_if_t<is_compatibile<T>, bool>
+    -> std::enable_if_t<json::is_compatibile<T>, bool>
 {
-  using type = std::conditional_t<is_alternative<T>, T, compatibile_alternative<T>>;
+  using type = std::conditional_t<json::is_alternative<T>, T, json::compatibile_alternative<T>>;
   auto const func = [&rhs](auto const& lhs) -> bool {
     if
       constexpr(std::is_same_v<decltype(lhs), type const&>) return lhs == rhs;
@@ -324,21 +329,21 @@ auto ::cxx::operator==(json const& j, T const& rhs) noexcept
 
 template <typename T>
 auto ::cxx::operator==(T const& lhs, json const& rhs) noexcept
-    -> std::enable_if_t<is_compatibile<T>, bool>
+    -> std::enable_if_t<json::is_compatibile<T>, bool>
 {
   return rhs == lhs;
 }
 
 template <typename T>
 auto ::cxx::operator!=(json const& lhs, T const& rhs) noexcept
-    -> std::enable_if_t<is_compatibile<T>, bool>
+    -> std::enable_if_t<json::is_compatibile<T>, bool>
 {
   return !(lhs == rhs);
 }
 
 template <typename T>
 auto ::cxx::operator!=(T const& lhs, json const& rhs) noexcept
-    -> std::enable_if_t<is_compatibile<T>, bool>
+    -> std::enable_if_t<json::is_compatibile<T>, bool>
 {
   return !(lhs == rhs);
 }

@@ -14,13 +14,13 @@ static void cxx_cbor_encode(benchmark::State& state)
 template <std::int64_t N>
 using Int = std::integral_constant<std::int64_t, N>;
 
-BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::null_t);
+BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::null_t);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::true_type);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::false_type);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, double);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::string);
-BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::array);
-BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::document);
+BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::array);
+BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::document);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x0>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x2>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x8>);
@@ -53,7 +53,7 @@ BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<-0x8000000000>);
 
 static void cxx_cbor_encode_non_empty_array(benchmark::State& state)
 {
-  cxx::json const json = cxx::array({42, "lorem", true, cxx::null});
+  cxx::json const json = cxx::json::array({42, "lorem", true, cxx::json::null});
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::encode(json));
 }
 BENCHMARK(cxx_cbor_encode_non_empty_array);
@@ -65,7 +65,7 @@ static void cxx_cbor_encode_non_empty_document(benchmark::State& state)
       {"lorem"_key, 42},
       {"ipsum"_key, "dolor"},
       {"sit"_key, true},
-      {"amet"_key, cxx::null}
+      {"amet"_key, cxx::json::null}
       // clang-format on
   };
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::encode(json));

@@ -8,7 +8,7 @@ TEST_CASE("can default construct cxx::json")
 {
   static_assert(std::is_nothrow_default_constructible_v<cxx::json>);
   cxx::json const json;
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(std::size(json) == 0);
 }
 
@@ -17,8 +17,8 @@ TEST_CASE("can copy construct cxx::json")
   static_assert(std::is_copy_constructible_v<cxx::json>);
   cxx::json const orig;
   cxx::json const copy(orig);
-  REQUIRE(cxx::holds_alternative<cxx::document>(orig));
-  REQUIRE(cxx::holds_alternative<cxx::document>(copy));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(orig));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(copy));
   REQUIRE(orig == copy);
 }
 
@@ -27,7 +27,7 @@ TEST_CASE("can move construct cxx::json")
   static_assert(std::is_nothrow_move_constructible_v<cxx::json>);
   cxx::json orig;
   cxx::json const copy(std::move(orig));
-  REQUIRE(cxx::holds_alternative<cxx::document>(copy));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(copy));
 }
 
 TEST_CASE("can directly initialize cxx::json from std::int64_t")
@@ -66,12 +66,12 @@ TEST_CASE("can create cxx::json from bool")
   REQUIRE(std::size(json) == 1);
 }
 
-TEST_CASE("can create cxx::json from cxx::null")
+TEST_CASE("can create cxx::json from cxx::json::null")
 {
-  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::null_t>);
-  cxx::json const json(cxx::null);
-  REQUIRE(cxx::holds_alternative<cxx::null_t>(json));
-  REQUIRE(json == cxx::null);
+  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::null_t>);
+  cxx::json const json(cxx::json::null);
+  REQUIRE(cxx::holds_alternative<cxx::json::null_t>(json));
+  REQUIRE(json == cxx::json::null);
   REQUIRE(std::size(json) == 0);
 }
 
@@ -91,76 +91,76 @@ TEST_CASE("can create cxx::json from std::string")
   REQUIRE(std::size(ipsum) == 5);
 }
 
-TEST_CASE("can create cxx::json from cxx::array")
+TEST_CASE("can create cxx::json from cxx::json::array")
 {
-  static_assert(std::is_constructible_v<cxx::json, cxx::array const&>);
-  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::array&&>);
-  cxx::array const array = {true, cxx::null, 42l, 3.14};
+  static_assert(std::is_constructible_v<cxx::json, cxx::json::array const&>);
+  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::array&&>);
+  cxx::json::array const array = {true, cxx::json::null, 42l, 3.14};
   cxx::json const json(array);
-  REQUIRE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json == array);
   REQUIRE(std::size(json) == 4);
 
-  cxx::json const arr(cxx::array({cxx::null, 42l}));
-  REQUIRE(arr == cxx::array({cxx::null, 42l}));
+  cxx::json const arr(cxx::json::array({cxx::json::null, 42l}));
+  REQUIRE(arr == cxx::json::array({cxx::json::null, 42l}));
   REQUIRE(std::size(arr) == 2);
 }
 
-TEST_CASE("can create cxx::json from cxx::document")
+TEST_CASE("can create cxx::json from cxx::json::document")
 {
-  static_assert(std::is_constructible_v<cxx::json, cxx::document const&>);
-  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::document&&>);
-  cxx::document const document = {
+  static_assert(std::is_constructible_v<cxx::json, cxx::json::document const&>);
+  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::document&&>);
+  cxx::json::document const document = {
       // clang-format off
       {"lorem"s, 42l},
-      {"ipsum"s, cxx::null},
+      {"ipsum"s, cxx::json::null},
       {"dolor"s, true},
       {"sit"s, 3.14}
       // clang-format on
   };
   cxx::json const json(document);
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(json == document);
   REQUIRE(std::size(json) == 4);
 
-  cxx::json const doc(cxx::document({{"lorem"s, cxx::null}, {"ipsum"s, 3.14}}));
-  REQUIRE(cxx::holds_alternative<cxx::document>(doc));
-  REQUIRE(doc == cxx::document({{"lorem"s, cxx::null}, {"ipsum"s, 3.14}}));
+  cxx::json const doc(cxx::json::document({{"lorem"s, cxx::json::null}, {"ipsum"s, 3.14}}));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(doc));
+  REQUIRE(doc == cxx::json::document({{"lorem"s, cxx::json::null}, {"ipsum"s, 3.14}}));
   REQUIRE(std::size(doc) == 2);
 }
 
 TEST_CASE("can create cxx::json from std::initializer_list<json>")
 {
   static_assert(std::is_constructible_v<cxx::json, std::initializer_list<cxx::json>>);
-  cxx::json const json = {42, true, cxx::null, 3.14};
+  cxx::json const json = {42, true, cxx::json::null, 3.14};
 
-  REQUIRE(cxx::holds_alternative<cxx::array>(json));
-  REQUIRE(json == cxx::array({42, true, cxx::null, 3.14}));
+  REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
+  REQUIRE(json == cxx::json::array({42, true, cxx::json::null, 3.14}));
 }
 
-TEST_CASE("can create cxx::json from std::initializer_list<std::pair<key, json>>")
+TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, json>>")
 {
   using namespace cxx::literals;
   static_assert(
       std::is_constructible_v<cxx::json,
-                              std::initializer_list<std::pair<cxx::key const, cxx::json>>>);
+                              std::initializer_list<std::pair<cxx::json::key const, cxx::json>>>);
   cxx::json const json = {
       // clang-format off
       {"lorem"_key, 42},
       {"ipsum"_key, true},
-      {"dolor"_key, cxx::null},
+      {"dolor"_key, cxx::json::null},
       {"sit"_key, 3.14}
       // clang-format on
   };
 
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(json ==
           // clang-format off
-          cxx::document(
+          cxx::json::document(
             {
               {"lorem", 42},
               {"ipsum", true},
-              {"dolor", cxx::null},
+              {"dolor", cxx::json::null},
               {"sit", 3.14}
             }
           )
