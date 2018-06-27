@@ -179,8 +179,8 @@ namespace cxx
                          alternatives::find<traits::is_convertible_to<T>::template type>>;
 
   /*
-  *
-  */
+   *
+   */
   template <typename T>
   constexpr bool is_compatibile =
       !std::is_same_v<json, std::decay_t<T>> &&
@@ -198,8 +198,8 @@ namespace cxx
     object const& to_object() const noexcept { return storage; }
 
     /*
-    *
-    */
+     *
+     */
     template <typename T, typename = std::enable_if_t<is_compatibile<T>>>
     json(T&& t) noexcept(noexcept(compatibile_alternative<T>(std::forward<T>(t))))
         : storage(compatibile_alternative<T>(std::forward<T>(t)))

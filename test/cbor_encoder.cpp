@@ -118,9 +118,16 @@ TEST_CASE("cbor can encode booleans")
 
 TEST_CASE("cbor can encode strings")
 {
-  REQUIRE(cbor::encode("lorem") == stream({0x45, 'l', 'o', 'r', 'e', 'm'}));
+  REQUIRE(cbor::encode("") == stream({0x60}));
+  REQUIRE(cbor::encode("a") == stream({0x61, 0x61}));
+  REQUIRE(cbor::encode("IETF") == stream({0x64, 0x49, 0x45, 0x54, 0x46}));
+  REQUIRE(cbor::encode("\"\\") == stream({0x62, 0x22, 0x5c}));
+  REQUIRE(cbor::encode("ü") == stream({0x62, 0xc3, 0xbc}));
+  REQUIRE(cbor::encode("水") == stream({0x63, 0xe6, 0xb0, 0xb4}));
+  REQUIRE(cbor::encode("𐅑") == stream({0x64, 0xf0, 0x90, 0x85, 0x91}));
+  REQUIRE(cbor::encode("lorem") == stream({0x65, 'l', 'o', 'r', 'e', 'm'}));
   REQUIRE(cbor::encode("ipsum dolor sit amet consectetur") ==
-          stream({0x58, 0x20, 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o', 'l', 'o',
+          stream({0x78, 0x20, 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o', 'l', 'o',
                   'r',  ' ',  's', 'i', 't', ' ', 'a', 'm', 'e', 't', ' ', 'c',
                   'o',  'n',  's', 'e', 'c', 't', 'e', 't', 'u', 'r'}));
 }
@@ -136,13 +143,13 @@ TEST_CASE("cbor can encode arrays")
 {
   REQUIRE(cbor::encode(cxx::array()) == stream({0x80}));
   REQUIRE(cbor::encode({7}) == stream({0x81, 0x07}));
-  REQUIRE(cbor::encode({7, "lorem"}) == stream({0x82, 0x07, 0x45, 'l', 'o', 'r', 'e', 'm'}));
+  REQUIRE(cbor::encode({7, "lorem"}) == stream({0x82, 0x07, 0x65, 'l', 'o', 'r', 'e', 'm'}));
 }
 
 TEST_CASE("cbor can encode documents")
 {
   REQUIRE(cbor::encode(cxx::document()) == stream({0xa0}));
   REQUIRE(cbor::encode({{"lorem"_key, 42}, {"ipsum"_key, "dolor"}}) ==
-          stream({0xa2, 0x45, 'i',  'p', 's', 'u', 'm', 0x45, 'd',  'o', 'l',
-                  'o',  'r',  0x45, 'l', 'o', 'r', 'e', 'm',  0x18, 0x2a}));
+          stream({0xa2, 0x65, 'i',  'p', 's', 'u', 'm', 0x65, 'd',  'o', 'l',
+                  'o',  'r',  0x65, 'l', 'o', 'r', 'e', 'm',  0x18, 0x2a}));
 }

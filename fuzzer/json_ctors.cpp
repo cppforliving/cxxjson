@@ -118,7 +118,7 @@ cxx::json factory(byte_view bytes)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
   byte_view bytes(data, size);
-  auto const out=cxx::cbor::encode(factory(bytes));
-  if(std::empty(out)) std::terminate();
+  auto const out = cxx::cbor::encode(factory(bytes));
+  if (std::empty(out)) std::terminate();
   return 0;
 }

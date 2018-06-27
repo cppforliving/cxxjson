@@ -9,8 +9,8 @@ namespace
     struct type {
       // static inline constexpr cxx::byte positive = 0;
       static inline constexpr cxx::byte negative = 1;
-      static inline constexpr cxx::byte string = 2;
-      // static inline constexpr cxx::byte unicode = 3;
+      // static inline constexpr cxx::byte string = 2;
+      static inline constexpr cxx::byte unicode = 3;
       static inline constexpr cxx::byte array = 4;
       static inline constexpr cxx::byte document = 5;
       // static inline constexpr cxx::byte tag = 6;
@@ -105,7 +105,7 @@ namespace detail
   void encode(std::string const& x, cxx::cbor::byte_stream& stream) noexcept
   {
     assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
-    initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::string;
+    initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::unicode;
     auto first = reinterpret_cast<cxx::byte const*>(x.data());
     stream.insert(std::end(stream), first, first + std::size(x));
   }
