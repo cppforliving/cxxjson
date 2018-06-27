@@ -140,7 +140,7 @@ TEST_CASE("cbor can encode negative integers")
 
 TEST_CASE("cbor can encode null")
 {
-  REQUIRE(cbor::encode(cxx::null) == "f6"_hex);
+  REQUIRE(cbor::encode(cxx::json::null) == "f6"_hex);
 }
 
 TEST_CASE("cbor can encode booleans")
@@ -172,14 +172,14 @@ TEST_CASE("cbor can encode double")
 
 TEST_CASE("cbor can encode arrays")
 {
-  REQUIRE(cbor::encode(cxx::array()) == "80"_hex);
+  REQUIRE(cbor::encode(cxx::json::array()) == "80"_hex);
   REQUIRE(cbor::encode({7}) == "8107"_hex);
   REQUIRE(cbor::encode({7, "lorem"}) == "8207656c6f72656d"_hex);
 }
 
 TEST_CASE("cbor can encode documents")
 {
-  REQUIRE(cbor::encode(cxx::document()) == "a0"_hex);
+  REQUIRE(cbor::encode(cxx::json::document()) == "a0"_hex);
   REQUIRE(cbor::encode({{"lorem"_key, 42}, {"ipsum"_key, "dolor"}}) ==
           "a265697073756d65646f6c6f72656c6f72656d182a"_hex);
 }

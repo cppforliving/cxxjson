@@ -124,14 +124,14 @@ namespace detail
     stream.insert(std::end(stream), first, first + std::size(x));
   }
 
-  void encode(cxx::array const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json::array const& x, cxx::cbor::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::uint64_t) + 1 + std::size(x) * sizeof(cxx::json));
     initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::array;
     for (auto const& item : x) ::detail::encode(item, stream);
   }
 
-  void encode(cxx::document const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json::document const& x, cxx::cbor::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
     initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::document;
@@ -146,7 +146,7 @@ namespace detail
     stream.emplace_back(cxx::byte(b ? initial_byte::value::True : initial_byte::value::False));
   }
 
-  void encode(cxx::null_t, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json::null_t, cxx::cbor::byte_stream& stream) noexcept
   {
     stream.emplace_back(cxx::byte(initial_byte::value::Null));
   }
