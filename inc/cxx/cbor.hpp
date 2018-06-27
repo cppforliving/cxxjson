@@ -5,7 +5,7 @@
 
 namespace cxx
 {
-  using byte = std::uint8_t;
+  using byte = std::byte;
   struct cbor {
     using byte_stream = std::vector<::cxx::byte>;
     static byte_stream encode(json const&) noexcept;

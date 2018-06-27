@@ -4,27 +4,41 @@
 
 namespace
 {
+  template <typename T>
+  constexpr auto base_type_impl()
+  {
+    if
+      constexpr(std::is_enum_v<T>) { return std::underlying_type_t<T>{}; }
+    else
+    {
+      return T{};
+    }
+  }
+
+  template <typename T>
+  using base_type = std::decay_t<decltype(base_type_impl<T>())>;
+
   struct initial_byte {
-    static inline constexpr cxx::byte max_insitu = 23;
+    static inline constexpr base_type<cxx::byte> max_insitu = 23;
     struct type {
-      // static inline constexpr cxx::byte positive = 0;
-      static inline constexpr cxx::byte negative = 1;
-      // static inline constexpr cxx::byte string = 2;
-      static inline constexpr cxx::byte unicode = 3;
-      static inline constexpr cxx::byte array = 4;
-      static inline constexpr cxx::byte document = 5;
-      // static inline constexpr cxx::byte tag = 6;
-      // static inline constexpr cxx::byte special = 7;
+      // static inline constexpr base_type<cxx::byte> positive = 0;
+      static inline constexpr base_type<cxx::byte> negative = 1;
+      // static inline constexpr base_type<cxx::byte> string = 2;
+      static inline constexpr base_type<cxx::byte> unicode = 3;
+      static inline constexpr base_type<cxx::byte> array = 4;
+      static inline constexpr base_type<cxx::byte> document = 5;
+      // static inline constexpr base_type<cxx::byte> tag = 6;
+      // static inline constexpr base_type<cxx::byte> special = 7;
     };
     struct value {
-      static inline constexpr cxx::byte False = 0xf4;
-      static inline constexpr cxx::byte True = 0xf5;
-      static inline constexpr cxx::byte Null = 0xf6;
-      static inline constexpr cxx::byte ieee_754_double = 0xfb;
+      static inline constexpr base_type<cxx::byte> False = 0xf4;
+      static inline constexpr base_type<cxx::byte> True = 0xf5;
+      static inline constexpr base_type<cxx::byte> Null = 0xf6;
+      static inline constexpr base_type<cxx::byte> ieee_754_double = 0xfb;
     };
 
-    cxx::byte additional : 5; // lower
-    cxx::byte major : 3;      // higher
+    base_type<cxx::byte> additional : 5; // lower
+    base_type<cxx::byte> major : 3;      // higher
   };
   static_assert(sizeof(initial_byte) == sizeof(cxx::byte));
 
@@ -129,18 +143,18 @@ namespace detail
 
   void encode(bool b, cxx::cbor::byte_stream& stream) noexcept
   {
-    stream.emplace_back(b ? initial_byte::value::True : initial_byte::value::False);
+    stream.emplace_back(cxx::byte(b ? initial_byte::value::True : initial_byte::value::False));
   }
 
   void encode(cxx::null_t, cxx::cbor::byte_stream& stream) noexcept
   {
-    stream.emplace_back(initial_byte::value::Null);
+    stream.emplace_back(cxx::byte(initial_byte::value::Null));
   }
 
   void encode(double d, cxx::cbor::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(double) + 1);
-    stream.emplace_back(initial_byte::value::ieee_754_double);
+    stream.emplace_back(cxx::byte(initial_byte::value::ieee_754_double));
     auto dest = stream.insert(std::end(stream), sizeof(double), cxx::byte());
     auto const* first = reinterpret_cast<cxx::byte const*>(&d);
     std::reverse_copy(first, first + sizeof(double), dest);

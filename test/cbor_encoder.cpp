@@ -158,11 +158,9 @@ TEST_CASE("cbor can encode strings")
   REQUIRE(cbor::encode("ü") == "62c3bc"_hex);
   REQUIRE(cbor::encode("水") == "63e6b0b4"_hex);
   REQUIRE(cbor::encode("𐅑") == "64f0908591"_hex);
-  REQUIRE(cbor::encode("lorem") == stream({0x65, 'l', 'o', 'r', 'e', 'm'}));
+  REQUIRE(cbor::encode("lorem") == "656c6f72656d"_hex);
   REQUIRE(cbor::encode("ipsum dolor sit amet consectetur") ==
-          stream({0x78, 0x20, 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o', 'l', 'o',
-                  'r',  ' ',  's', 'i', 't', ' ', 'a', 'm', 'e', 't', ' ', 'c',
-                  'o',  'n',  's', 'e', 'c', 't', 'e', 't', 'u', 'r'}));
+          "7820697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
 }
 
 TEST_CASE("cbor can encode double")
@@ -176,13 +174,12 @@ TEST_CASE("cbor can encode arrays")
 {
   REQUIRE(cbor::encode(cxx::array()) == "80"_hex);
   REQUIRE(cbor::encode({7}) == "8107"_hex);
-  REQUIRE(cbor::encode({7, "lorem"}) == stream({0x82, 0x07, 0x65, 'l', 'o', 'r', 'e', 'm'}));
+  REQUIRE(cbor::encode({7, "lorem"}) == "8207656c6f72656d"_hex);
 }
 
 TEST_CASE("cbor can encode documents")
 {
   REQUIRE(cbor::encode(cxx::document()) == "a0"_hex);
   REQUIRE(cbor::encode({{"lorem"_key, 42}, {"ipsum"_key, "dolor"}}) ==
-          stream({0xa2, 0x65, 'i',  'p', 's', 'u', 'm', 0x65, 'd',  'o', 'l',
-                  'o',  'r',  0x65, 'l', 'o', 'r', 'e', 'm',  0x18, 0x2a}));
+          "a265697073756d65646f6c6f72656c6f72656d182a"_hex);
 }
