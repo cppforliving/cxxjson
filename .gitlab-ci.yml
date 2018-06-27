@@ -1,8 +1,7 @@
 image: registry.gitlab.com/attu/cxx
 
 stages:
-- build:gcc
-- build:clang
+- build
 - sanitize
 - benchmark
 - post
@@ -59,37 +58,37 @@ stages:
   - ./waf configure --prefix=usr build install --destdir=/
 
 gcc:debug:
-  stage: build:gcc
+  stage: build
   <<: *gcc
   <<: *debug
   <<: *build
 
 gcc:release:
-  stage: build:gcc
+  stage: build
   <<: *gcc
   <<: *release
   <<: *build
 
 clang:libstdc++:debug:
-  stage: build:clang
+  stage: build
   <<: *clang
   <<: *debug
   <<: *build
 
 clang:libstdc++:release:
-  stage: build:clang
+  stage: build
   <<: *clang
   <<: *release
   <<: *build
 
 clang:libcxx:debug:
-  stage: build:clang
+  stage: build
   <<: *libcxx
   <<: *debug
   <<: *build
 
 clang:libcxx:release:
-  stage: build:clang
+  stage: build
   <<: *libcxx
   <<: *release
   <<: *build
