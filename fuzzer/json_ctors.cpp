@@ -37,9 +37,9 @@ cxx::json make(bool, byte_view bytes)
   return cxx::json{!!(bytes.front() & 0x1)};
 }
 
-cxx::json make(cxx::null_t, byte_view)
+cxx::json make(cxx::json::null_t, byte_view)
 {
-  return cxx::json{cxx::null};
+  return cxx::json{cxx::json::null};
 }
 
 std::string do_make(byte_view bytes)
@@ -56,7 +56,7 @@ cxx::json make(std::string, byte_view bytes)
   return cxx::json{do_make(bytes)};
 }
 
-cxx::json make(cxx::array array, byte_view bytes)
+cxx::json make(cxx::json::array array, byte_view bytes)
 {
   if (bytes.empty()) return cxx::json{std::move(array)};
   auto size = static_cast<std::size_t>(bytes.front());
@@ -69,7 +69,7 @@ cxx::json make(cxx::array array, byte_view bytes)
   return cxx::json{std::move(array)};
 }
 
-cxx::json make(cxx::document doc, byte_view bytes)
+cxx::json make(cxx::json::document doc, byte_view bytes)
 {
   if (bytes.empty()) return cxx::json{std::move(doc)};
   auto size = static_cast<std::size_t>(bytes.front());
@@ -102,13 +102,13 @@ cxx::json factory(byte_view bytes)
       return make(bool{}, bytes);
       break;
     case 3:
-      return make(cxx::null, bytes);
+      return make(cxx::json::null, bytes);
       break;
     case 4:
-      return make(cxx::array{}, bytes);
+      return make(cxx::json::array{}, bytes);
       break;
     case 5:
-      return make(cxx::document{}, bytes);
+      return make(cxx::json::document{}, bytes);
       break;
     default:
       return make(std::string{}, bytes);
@@ -118,7 +118,7 @@ cxx::json factory(byte_view bytes)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
   byte_view bytes(data, size);
-  auto const out=cxx::cbor::encode(factory(bytes));
-  if(std::empty(out)) std::terminate();
+  auto const out = cxx::cbor::encode(factory(bytes));
+  if (std::empty(out)) std::terminate();
   return 0;
 }

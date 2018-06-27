@@ -52,18 +52,18 @@ TEST_CASE("can nothrow assign double to cxx::json")
   REQUIRE(json == 3.14);
 }
 
-TEST_CASE("can nothrow assign cxx::null_t to cxx::json")
+TEST_CASE("can nothrow assign cxx::json::null_t to cxx::json")
 {
-  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::null_t>);
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::null_t>);
   cxx::json json;
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::null_t>(json));
-  REQUIRE(json != cxx::null);
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::null_t>(json));
+  REQUIRE(json != cxx::json::null);
 
-  json = cxx::null;
-  REQUIRE(cxx::holds_alternative<cxx::null_t>(json));
-  REQUIRE(json == cxx::null);
-  REQUIRE_FALSE(json != cxx::null);
-  REQUIRE_FALSE(cxx::null != cxx::null);
+  json = cxx::json::null;
+  REQUIRE(cxx::holds_alternative<cxx::json::null_t>(json));
+  REQUIRE(json == cxx::json::null);
+  REQUIRE_FALSE(json != cxx::json::null);
+  REQUIRE_FALSE(cxx::json::null != cxx::json::null);
 }
 
 TEST_CASE("can nothrow assign bool to cxx::json")
@@ -103,74 +103,74 @@ TEST_CASE("can nothrow assign std::string rvalue to cxx::json")
   REQUIRE(json == "lorem");
 }
 
-TEST_CASE("can assign cxx::array to cxx::json")
+TEST_CASE("can assign cxx::json::array to cxx::json")
 {
-  static_assert(std::is_assignable_v<cxx::json, cxx::array>);
+  static_assert(std::is_assignable_v<cxx::json, cxx::json::array>);
   cxx::json json;
-  cxx::array const array = {42, cxx::null, "lorem", true};
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::array>(json));
+  cxx::json::array const array = {42, cxx::json::null, "lorem", true};
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json != array);
 
   json = array;
-  REQUIRE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json == array);
 }
 
-TEST_CASE("can nothrow assign cxx::array rvalue to cxx::json")
+TEST_CASE("can nothrow assign cxx::json::array rvalue to cxx::json")
 {
-  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::array&&>);
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::array&&>);
   cxx::json json;
-  cxx::array const array = {42, cxx::null, "lorem", true};
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::array>(json));
+  cxx::json::array const array = {42, cxx::json::null, "lorem", true};
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json != array);
 
-  cxx::array copy = array;
+  cxx::json::array copy = array;
   json = std::move(copy);
 
-  REQUIRE(cxx::holds_alternative<cxx::array>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json == array);
 }
 
-TEST_CASE("can assign cxx::document to cxx::json")
+TEST_CASE("can assign cxx::json::document to cxx::json")
 {
-  static_assert(std::is_assignable_v<cxx::json, cxx::document>);
+  static_assert(std::is_assignable_v<cxx::json, cxx::json::document>);
   cxx::json json = 42;
-  cxx::document const doc = {
+  cxx::json::document const doc = {
       // clang-format off
       {"lorem", 42},
-      {"ipsum", cxx::null},
+      {"ipsum", cxx::json::null},
       {"dolor", "sit"},
       {"amet", true}
       // clang-format on
   };
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(json != doc);
 
   json = doc;
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(json == doc);
 }
 
-TEST_CASE("can nothrow assign cxx::document rvalue to cxx::json")
+TEST_CASE("can nothrow assign cxx::json::document rvalue to cxx::json")
 {
-  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::document&&>);
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::document&&>);
   cxx::json json = 42;
 
-  cxx::document const doc = {
+  cxx::json::document const doc = {
       // clang-format off
       {"lorem", 42},
-      {"ipsum", cxx::null},
+      {"ipsum", cxx::json::null},
       {"dolor", "sit"},
       {"amet", true}
       // clang-format on
   };
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(json != doc);
 
-  cxx::document copy = doc;
+  cxx::json::document copy = doc;
   json = std::move(copy);
 
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
   REQUIRE(json == doc);
 }
 
@@ -178,35 +178,36 @@ TEST_CASE("can assign std::initializer_list<cxx::json> to cxx::json")
 {
   static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::json>>);
   cxx::json json;
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
 
-  json = {42, true, cxx::null, 3.14};
-  REQUIRE(cxx::holds_alternative<cxx::array>(json));
-  REQUIRE(json == cxx::array({42, true, cxx::null, 3.14}));
+  json = {42, true, cxx::json::null, 3.14};
+  REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
+  REQUIRE(json == cxx::json::array({42, true, cxx::json::null, 3.14}));
   REQUIRE(std::size(json) == 4);
 }
 
-TEST_CASE("can assign std::initializer_list<cxx::document::value_type> to cxx::json")
+TEST_CASE("can assign std::initializer_list<cxx::json::document::value_type> to cxx::json")
 {
   using namespace cxx::literals;
-  static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::document::value_type>>);
+  static_assert(
+      std::is_assignable_v<cxx::json, std::initializer_list<cxx::json::document::value_type>>);
   cxx::json json = 42;
   REQUIRE(cxx::holds_alternative<std::int64_t>(json));
   json = {
       // clang-format off
       {"lorem"_key, 42},
       {"ipsum"_key, "dolor"},
-      {"sit"_key, cxx::null},
+      {"sit"_key, cxx::json::null},
       {"amet"_key, 3.14},
       {"consectetur"_key, true}
       // clang-format on
   };
-  REQUIRE(cxx::holds_alternative<cxx::document>(json));
-  cxx::document const document = {
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  cxx::json::document const document = {
       // clang-format off
       {"lorem", 42},
       {"ipsum", "dolor"},
-      {"sit", cxx::null},
+      {"sit", cxx::json::null},
       {"amet", 3.14},
       {"consectetur", true}
       // clang-format on
