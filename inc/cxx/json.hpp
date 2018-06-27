@@ -1,6 +1,7 @@
 #pragma once
 
 #include <variant>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -127,6 +128,11 @@ namespace cxx
   /*
    *
    */
+  using byte = std::byte;
+
+  /*
+   *
+   */
   struct json {
     /*
      *
@@ -136,6 +142,11 @@ namespace cxx
       constexpr bool operator!=(null_t) const noexcept { return false; }
     };
     static constexpr null_t null{};
+
+    /*
+     *
+     */
+    using byte_stream = std::vector<cxx::byte>;
 
     /*
      *
@@ -170,9 +181,9 @@ namespace cxx
                            std::decay_t<T>,
                            json::alternatives::find<traits::is_convertible_to<T>::template type>>;
 
-  /*
-   *
-   */
+    /*
+     *
+     */
     template <typename T>
     static constexpr bool is_compatibile =
         !std::is_same_v<json, std::decay_t<T>> &&

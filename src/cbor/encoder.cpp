@@ -43,10 +43,10 @@ namespace
   static_assert(sizeof(initial_byte) == sizeof(cxx::byte));
 
   constexpr auto const initial = cxx::overload(
-      [](cxx::cbor::byte_stream::reference byte) -> initial_byte* {
+      [](cxx::json::byte_stream::reference byte) -> initial_byte* {
         return reinterpret_cast<initial_byte*>(&byte);
       },
-      [](cxx::cbor::byte_stream::const_reference byte) -> initial_byte const* {
+      [](cxx::json::byte_stream::const_reference byte) -> initial_byte const* {
         return reinterpret_cast<initial_byte const*>(&byte);
       });
 
@@ -58,26 +58,26 @@ namespace
            htonl(static_cast<std::uint32_t>(x >> 32));
   }
 
-  auto const available = [](cxx::cbor::byte_stream const& stream) {
+  auto const available = [](cxx::json::byte_stream const& stream) {
     return stream.capacity() - std::size(stream);
   };
 
-  auto const append = [](cxx::cbor::byte_stream& stream,
-                         cxx::cbor::byte_stream::size_type const space) {
+  auto const append = [](cxx::json::byte_stream& stream,
+                         cxx::json::byte_stream::size_type const space) {
     return stream.reserve(stream.capacity() + space);
   };
 
-  auto const assure = [](cxx::cbor::byte_stream& stream,
-                         cxx::cbor::byte_stream::size_type const needed) {
+  auto const assure = [](cxx::json::byte_stream& stream,
+                         cxx::json::byte_stream::size_type const needed) {
     if (available(stream) < needed) append(stream, needed);
   };
 }
 
 namespace detail
 {
-  void encode(cxx::json const&, cxx::cbor::byte_stream&) noexcept;
+  void encode(cxx::json const&, cxx::json::byte_stream&) noexcept;
 
-  cxx::byte& encode_positive_integer(std::uint64_t x, cxx::cbor::byte_stream& stream) noexcept
+  cxx::byte& encode_positive_integer(std::uint64_t x, cxx::json::byte_stream& stream) noexcept
   {
     auto& init = stream.emplace_back(cxx::byte(x));
     if (x <= initial_byte::max_insitu) return init;
@@ -103,20 +103,20 @@ namespace detail
     return *(--it);
   }
 
-  void encode_negative_integer(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
+  void encode_negative_integer(std::int64_t x, cxx::json::byte_stream& stream) noexcept
   {
     initial(encode_positive_integer(static_cast<std::uint64_t>(-(x + 1)), stream))->major =
         initial_byte::type::negative;
   }
 
-  void encode(std::int64_t x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(std::int64_t x, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::int64_t) + 1);
     if (x < 0) return encode_negative_integer(x, stream);
     encode_positive_integer(static_cast<std::uint64_t>(x), stream);
   }
 
-  void encode(std::string const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(std::string const& x, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
     initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::unicode;
@@ -124,14 +124,14 @@ namespace detail
     stream.insert(std::end(stream), first, first + std::size(x));
   }
 
-  void encode(cxx::json::array const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json::array const& x, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::uint64_t) + 1 + std::size(x) * sizeof(cxx::json));
     initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::array;
     for (auto const& item : x) ::detail::encode(item, stream);
   }
 
-  void encode(cxx::json::document const& x, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json::document const& x, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
     initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::document;
@@ -141,17 +141,17 @@ namespace detail
     }
   }
 
-  void encode(bool b, cxx::cbor::byte_stream& stream) noexcept
+  void encode(bool b, cxx::json::byte_stream& stream) noexcept
   {
     stream.emplace_back(cxx::byte(b ? initial_byte::value::True : initial_byte::value::False));
   }
 
-  void encode(cxx::json::null_t, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json::null_t, cxx::json::byte_stream& stream) noexcept
   {
     stream.emplace_back(cxx::byte(initial_byte::value::Null));
   }
 
-  void encode(double d, cxx::cbor::byte_stream& stream) noexcept
+  void encode(double d, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(double) + 1);
     stream.emplace_back(cxx::byte(initial_byte::value::ieee_754_double));
@@ -160,15 +160,15 @@ namespace detail
     std::reverse_copy(first, first + sizeof(double), dest);
   }
 
-  void encode(cxx::json const& json, cxx::cbor::byte_stream& stream) noexcept
+  void encode(cxx::json const& json, cxx::json::byte_stream& stream) noexcept
   {
     cxx::visit([&stream](auto const& x) { ::detail::encode(x, stream); }, json);
   }
 }
 
-auto ::cxx::cbor::encode(json const& j) noexcept -> byte_stream
+auto ::cxx::cbor::encode(json const& j) noexcept -> json::byte_stream
 {
-  byte_stream stream;
+  json::byte_stream stream;
   ::detail::encode(j, stream);
   return stream;
 }

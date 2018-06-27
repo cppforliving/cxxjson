@@ -5,7 +5,7 @@
 using namespace cxx::literals;
 
 using cbor = cxx::cbor;
-using stream = cbor::byte_stream;
+using stream = cxx::json::byte_stream;
 
 namespace
 {
