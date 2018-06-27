@@ -161,8 +161,8 @@ namespace cxx
     /*
      *
      */
-    using alternatives =
-        meta::type_list<document, std::int64_t, array, std::string, double, bool, null_t>;
+    using alternatives = meta::
+        type_list<document, std::int64_t, array, std::string, byte_stream, double, bool, null_t>;
 
     /*
      *

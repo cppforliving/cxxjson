@@ -1,48 +1,13 @@
 #include "inc/cxx/cbor.hpp"
 #include "test/catch.hpp"
+#include "test/utils.hpp"
 #include <type_traits>
 #include <limits>
 using namespace cxx::literals;
+using namespace test::literals;
 
 using cbor = cxx::cbor;
 using stream = cxx::json::byte_stream;
-
-namespace
-{
-  template <char h, char l, char... rest>
-  void byte_literal(stream& bytes)
-  {
-    static_assert((h >= 'a' && h <= 'f') || (h >= '0' && h <= '9'));
-    static_assert((l >= 'a' && l <= 'f') || (l >= '0' && l <= '9'));
-    char h_base = 0;
-    char l_base = 0;
-    if
-      constexpr(h >= 'a' && h <= 'f') { h_base = 'a' - 10; }
-    else
-    {
-      h_base = '0';
-    }
-    if
-      constexpr(l >= 'a' && l <= 'f') { l_base = 'a' - 10; }
-    else
-    {
-      l_base = '0';
-    }
-    bytes.emplace_back((stream::value_type(h - h_base) << 4) | stream::value_type(l - l_base));
-    if
-      constexpr(sizeof...(rest) > 1) byte_literal<rest...>(bytes);
-  }
-
-  template <typename T, T... args>
-  stream operator"" _hex()
-  {
-    static_assert(sizeof...(args) % 2 == 0);
-    stream bytes;
-    bytes.reserve(sizeof...(args) / 2);
-    byte_literal<args...>(bytes);
-    return bytes;
-  }
-}
 
 TEST_CASE("cbor sets correct initial byte for integers")
 {
@@ -161,6 +126,13 @@ TEST_CASE("cbor can encode strings")
   REQUIRE(cbor::encode("lorem") == "656c6f72656d"_hex);
   REQUIRE(cbor::encode("ipsum dolor sit amet consectetur") ==
           "7820697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
+}
+
+TEST_CASE("cbor can encode byte_stream")
+{
+  REQUIRE(cbor::encode(""_hex) == "40"_hex);
+  REQUIRE(cbor::encode("0a"_hex) == "410a"_hex);
+  REQUIRE(cbor::encode("deadbeef"_hex) == "44deadbeef"_hex);
 }
 
 TEST_CASE("cbor can encode double")

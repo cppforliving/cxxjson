@@ -23,7 +23,7 @@ namespace
     struct type {
       // static inline constexpr base_type<cxx::byte> positive = 0;
       static inline constexpr base_type<cxx::byte> negative = 1;
-      // static inline constexpr base_type<cxx::byte> string = 2;
+      static inline constexpr base_type<cxx::byte> bytes = 2;
       static inline constexpr base_type<cxx::byte> unicode = 3;
       static inline constexpr base_type<cxx::byte> array = 4;
       static inline constexpr base_type<cxx::byte> document = 5;
@@ -114,6 +114,13 @@ namespace detail
     assure(stream, sizeof(std::int64_t) + 1);
     if (x < 0) return encode_negative_integer(x, stream);
     encode_positive_integer(static_cast<std::uint64_t>(x), stream);
+  }
+
+  void encode(cxx::json::byte_stream const& x, cxx::json::byte_stream& stream) noexcept
+  {
+    assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
+    initial(encode_positive_integer(std::size(x), stream))->major = initial_byte::type::bytes;
+    stream.insert(std::end(stream), std::begin(x), std::end(x));
   }
 
   void encode(std::string const& x, cxx::json::byte_stream& stream) noexcept
