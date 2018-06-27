@@ -6,7 +6,6 @@ ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 ADD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=benchmark /tmp/benchmark/PKGBUILD
 ADD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=libc%2b%2b /tmp/libc++/PKGBUILD
-ADD https://github.com/gcovr/gcovr/archive/master.tar.gz /tmp/gcovr.tar.gz
 
 RUN pacman -Syy --noconfirm \
  && pacman -S --noconfirm \
@@ -22,15 +21,12 @@ RUN pacman -Syy --noconfirm \
         python \
         python-pip \
  && pacman -Scc --noconfirm \
+ && pip install gcovr \
  && useradd \
       --system \
       --no-create-home \
       --shell /usr/bin/bash \
       builder \
- && mkdir /tmp/gcovr -p \
- && tar -C /tmp/gcovr -xzf /tmp/gcovr.tar.gz --strip-components 1 \
- && pip install /tmp/gcovr \
- && rm -rf /tmp/gcovr* \
  && chown -R builder /tmp/benchmark \
  && cd /tmp/benchmark \
  && su builder -c 'makepkg --nocheck' \
@@ -53,7 +49,6 @@ RUN pacman -Syy --noconfirm \
       libunwind \
       make \
       ninja \
-      python-pip \
  && userdel builder
 
 WORKDIR /
