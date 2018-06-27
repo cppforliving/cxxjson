@@ -223,6 +223,12 @@ namespace cxx
     /*
      *
      */
+    json(std::initializer_list<cxx::json::byte_stream::value_type>);
+    json& operator=(std::initializer_list<cxx::json::byte_stream::value_type>);
+
+    /*
+     *
+     */
     json(std::initializer_list<std::pair<json::key const, json>>);
     json& operator=(std::initializer_list<std::pair<json::key const, json>>);
 

@@ -156,6 +156,15 @@ TEST_CASE("can create cxx::json from std::initializer_list<json>")
   REQUIRE(json == cxx::json::array({42, true, cxx::json::null, 3.14}));
 }
 
+TEST_CASE("can create cxx::json from std::initializer_list<cxx::byte>")
+{
+  static_assert(std::is_constructible_v<cxx::json, std::initializer_list<cxx::byte>>);
+  cxx::json const json = {cxx::byte(0xde), cxx::byte(0xad), cxx::byte(0xbe), cxx::byte(0xef)};
+
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == "deadbeef"_hex);
+}
+
 TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, json>>")
 {
   using namespace cxx::literals;

@@ -5,6 +5,11 @@
 {
 }
 
+::cxx::json::json(std::initializer_list<cxx::json::byte_stream::value_type> init)
+    : storage(cxx::json::byte_stream(std::move(init)))
+{
+}
+
 ::cxx::json::json(std::initializer_list<std::pair<json::key const, json>> init) : json()
 {
   auto& doc = cxx::get<cxx::json::document>(*this);
@@ -15,6 +20,11 @@
 }
 
 auto ::cxx::json::operator=(std::initializer_list<cxx::json::array::value_type> init) -> json&
+{
+  return (*this = cxx::json(std::move(init)));
+}
+
+auto ::cxx::json::operator=(std::initializer_list<cxx::json::byte_stream::value_type> init) -> json&
 {
   return (*this = cxx::json(std::move(init)));
 }

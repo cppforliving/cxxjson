@@ -214,6 +214,18 @@ TEST_CASE("can assign std::initializer_list<cxx::json> to cxx::json")
   REQUIRE(std::size(json) == 4);
 }
 
+TEST_CASE("can assign std::initializer_list<cxx::byte> to cxx::json")
+{
+  static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::byte>>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+
+  json = {cxx::byte(0xde), cxx::byte(0xad), cxx::byte(0xbe), cxx::byte(0xef)};
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == "deadbeef"_hex);
+  REQUIRE(std::size(json) == 4);
+}
+
 TEST_CASE("can assign std::initializer_list<cxx::json::document::value_type> to cxx::json")
 {
   using namespace cxx::literals;
