@@ -1,6 +1,8 @@
 #include <benchmark/benchmark.h>
 #include "inc/cxx/cbor.hpp"
+#include "test/utils.hpp"
 using namespace cxx::literals;
+using namespace test::literals;
 
 template <typename T>
 static void cxx_cbor_encode(benchmark::State& state)
@@ -19,6 +21,7 @@ BENCHMARK_TEMPLATE(cxx_cbor_encode, std::true_type);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::false_type);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, double);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::string);
+BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::byte_stream);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::array);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::document);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x0>);
@@ -50,6 +53,13 @@ BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<-0x40000000>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<-0x200000000>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<-0x1000000000>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<-0x8000000000>);
+
+static void cxx_cbor_encode_non_empty_byte_stream(benchmark::State& state)
+{
+  cxx::json const json = "deadbeef"_hex;
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::encode(json));
+}
+BENCHMARK(cxx_cbor_encode_non_empty_byte_stream);
 
 static void cxx_cbor_encode_non_empty_array(benchmark::State& state)
 {

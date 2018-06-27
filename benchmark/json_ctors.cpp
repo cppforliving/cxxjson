@@ -24,6 +24,7 @@ BENCHMARK_TEMPLATE(cxx_json_ctor, std::int64_t);
 BENCHMARK_TEMPLATE(cxx_json_ctor, bool);
 BENCHMARK_TEMPLATE(cxx_json_ctor, double);
 BENCHMARK_TEMPLATE(cxx_json_ctor, std::string);
+BENCHMARK_TEMPLATE(cxx_json_ctor, cxx::json::byte_stream);
 BENCHMARK_TEMPLATE(cxx_json_ctor, cxx::json::null_t);
 BENCHMARK_TEMPLATE(cxx_json_ctor, cxx::json::array);
 BENCHMARK_TEMPLATE(cxx_json_ctor, cxx::json::document);

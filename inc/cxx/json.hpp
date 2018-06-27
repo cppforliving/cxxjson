@@ -161,8 +161,8 @@ namespace cxx
     /*
      *
      */
-    using alternatives =
-        meta::type_list<document, std::int64_t, array, std::string, double, bool, null_t>;
+    using alternatives = meta::
+        type_list<document, std::int64_t, array, std::string, byte_stream, double, bool, null_t>;
 
     /*
      *
@@ -219,6 +219,12 @@ namespace cxx
      */
     json(std::initializer_list<cxx::json::array::value_type>);
     json& operator=(std::initializer_list<cxx::json::array::value_type>);
+
+    /*
+     *
+     */
+    json(std::initializer_list<cxx::json::byte_stream::value_type>);
+    json& operator=(std::initializer_list<cxx::json::byte_stream::value_type>);
 
     /*
      *

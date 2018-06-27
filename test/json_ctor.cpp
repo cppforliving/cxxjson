@@ -1,8 +1,10 @@
 #include "inc/cxx/json.hpp"
 #include "test/catch.hpp"
+#include "test/utils.hpp"
 #include <type_traits>
 
 using namespace std::string_literals;
+using namespace test::literals;
 
 TEST_CASE("can default construct cxx::json")
 {
@@ -83,12 +85,28 @@ TEST_CASE("can create cxx::json from std::string")
   cxx::json const json(lorem);
   REQUIRE(cxx::holds_alternative<std::string>(json));
   REQUIRE(json == lorem);
-  REQUIRE(std::size(lorem) == 5);
+  REQUIRE(std::size(json) == 5);
 
   cxx::json const ipsum(std::string("ipsum"));
   REQUIRE(cxx::holds_alternative<std::string>(ipsum));
   REQUIRE(ipsum == std::string("ipsum"));
   REQUIRE(std::size(ipsum) == 5);
+}
+
+TEST_CASE("can create cxx::json from json::byte_stream")
+{
+  static_assert(std::is_constructible_v<cxx::json, cxx::json::byte_stream const&>);
+  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::byte_stream&&>);
+  cxx::json::byte_stream const stream = "010203"_hex;
+  cxx::json const json(stream);
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == stream);
+  REQUIRE(std::size(json) == 3);
+
+  cxx::json const other("deadbeef"_hex);
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(other));
+  REQUIRE(other == "deadbeef"_hex);
+  REQUIRE(std::size(other) == 4);
 }
 
 TEST_CASE("can create cxx::json from cxx::json::array")
@@ -136,6 +154,15 @@ TEST_CASE("can create cxx::json from std::initializer_list<json>")
 
   REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json == cxx::json::array({42, true, cxx::json::null, 3.14}));
+}
+
+TEST_CASE("can create cxx::json from std::initializer_list<cxx::byte>")
+{
+  static_assert(std::is_constructible_v<cxx::json, std::initializer_list<cxx::byte>>);
+  cxx::json const json = {cxx::byte(0xde), cxx::byte(0xad), cxx::byte(0xbe), cxx::byte(0xef)};
+
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == "deadbeef"_hex);
 }
 
 TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, json>>")

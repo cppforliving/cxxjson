@@ -1,6 +1,9 @@
 #include "inc/cxx/json.hpp"
 #include "test/catch.hpp"
+#include "test/utils.hpp"
 #include <type_traits>
+
+using namespace test::literals;
 
 TEST_CASE("cxx::json is copy assignable")
 {
@@ -103,6 +106,31 @@ TEST_CASE("can nothrow assign std::string rvalue to cxx::json")
   REQUIRE(json == "lorem");
 }
 
+TEST_CASE("can assign json::byte_stream to cxx::json")
+{
+  static_assert(std::is_assignable_v<cxx::json, cxx::json::byte_stream>);
+  cxx::json json;
+  auto const bytes = "deadbeef"_hex;
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json != bytes);
+
+  json = bytes;
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == bytes);
+}
+
+TEST_CASE("can nothrow assign json::byte_stream rvalue to cxx::json")
+{
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::byte_stream&&>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json != "deadbeef"_hex);
+
+  json = "deadbeef"_hex;
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == "deadbeef"_hex);
+}
+
 TEST_CASE("can assign cxx::json::array to cxx::json")
 {
   static_assert(std::is_assignable_v<cxx::json, cxx::json::array>);
@@ -183,6 +211,18 @@ TEST_CASE("can assign std::initializer_list<cxx::json> to cxx::json")
   json = {42, true, cxx::json::null, 3.14};
   REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
   REQUIRE(json == cxx::json::array({42, true, cxx::json::null, 3.14}));
+  REQUIRE(std::size(json) == 4);
+}
+
+TEST_CASE("can assign std::initializer_list<cxx::byte> to cxx::json")
+{
+  static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::byte>>);
+  cxx::json json;
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+
+  json = {cxx::byte(0xde), cxx::byte(0xad), cxx::byte(0xbe), cxx::byte(0xef)};
+  REQUIRE(cxx::holds_alternative<cxx::json::byte_stream>(json));
+  REQUIRE(json == "deadbeef"_hex);
   REQUIRE(std::size(json) == 4);
 }
 
