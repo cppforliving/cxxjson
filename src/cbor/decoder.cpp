@@ -13,9 +13,18 @@ namespace
                                                       cxx::byte byte,
                                                       cxx::cbor::byte_view bytes)
   {
-    if (cxx::codec::cbor::initial(byte)->additional <= initial_byte::value::max_insitu)
-      return {std::int64_t(cxx::codec::cbor::initial(byte)->additional), bytes};
-    return {std::int64_t(cxx::codec::cbor::initial(byte)->additional), bytes};
+    auto const additional = cxx::codec::cbor::initial(byte)->additional;
+    if (additional <= initial_byte::value::max_insitu) return {std::int64_t(additional), bytes};
+    if (additional > initial_byte::value::eigth_bytes)
+      throw cxx::cbor::data_error("meaningless additional data in initial byte");
+    auto const space = (1u << (0x3 & (additional - initial_byte::value::max_insitu - 1)));
+    if (std::size(bytes) < space) throw cxx::cbor::buffer_error("not enough data to decode json");
+    if (space == 1) {
+      auto const x = bytes.front();
+      bytes.remove_prefix(1);
+      return {std::int64_t(x), bytes};
+    }
+    throw cxx::cbor::unsupported("integer format not yet supported");
   }
 }
 
