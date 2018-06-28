@@ -34,10 +34,10 @@ TEST_CASE("const cxx::json allows item access for string keys")
   }
   cxx::json const json = {
       // clang-format off
-      {"lorem"_key, 42},
-      {"ipsum"_key, cxx::json::null},
-      {"dolor"_key, "sit"},
-      {"amet"_key, 3.14}
+      "lorem"_key >> 42,
+      "ipsum"_key >> cxx::json::null,
+      "dolor"_key >> "sit",
+      "amet"_key >> 3.14
       // clang-format on
   };
   SECTION("throws exception for nonexisting key")
@@ -60,10 +60,10 @@ TEST_CASE("non-const cxx::json allows item access for string keys")
   }
   cxx::json json = {
       // clang-format off
-      {"lorem"_key, 42},
-      {"ipsum"_key, cxx::json::null},
-      {"dolor"_key, "sit"},
-      {"amet"_key, 3.14}
+      "lorem"_key >> 42,
+      "ipsum"_key >> cxx::json::null,
+      "dolor"_key >> "sit",
+      "amet"_key >> 3.14
       // clang-format on
   };
   REQUIRE(json["lorem"] == 42);

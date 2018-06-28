@@ -173,10 +173,10 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, 
                               std::initializer_list<std::pair<cxx::json::key const, cxx::json>>>);
   cxx::json const json = {
       // clang-format off
-      {"lorem"_key, 42},
-      {"ipsum"_key, true},
-      {"dolor"_key, cxx::json::null},
-      {"sit"_key, 3.14}
+      "lorem"_key >> 42,
+      "ipsum"_key >> true,
+      "dolor"_key >> cxx::json::null,
+      "sit"_key >> 3.14
       // clang-format on
   };
 
@@ -193,6 +193,41 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, 
           )
           // clang-format on
           );
+}
+
+TEST_CASE("can create cxx::json from nested document")
+{
+  using namespace cxx::literals;
+  cxx::json const json = {
+      // clang-format off
+      "lorem"_key >> 42,
+      {"ipsum"_key,
+        {
+          "dolor"_key >> cxx::json::null,
+          "sit"_key >> 3.14
+        }
+      }
+      // clang-format on
+  };
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<std::int64_t>(json["lorem"]));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(json["ipsum"]));
+  REQUIRE(json["lorem"] == 42);
+  REQUIRE(json["ipsum"]["dolor"] == cxx::json::null);
+  REQUIRE(json["ipsum"]["sit"] == 3.14);
+
+  cxx::json const other = {
+      // clang-format off
+      {
+        "a"_key, {
+          "b"_key >> "c"
+        }
+      }
+      // clang-format on
+  };
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(other));
+  REQUIRE(cxx::holds_alternative<cxx::json::document>(other["a"]));
+  REQUIRE(other["a"]["b"] == "c");
 }
 
 TEST_CASE("can directly initialize cxx::json from int")

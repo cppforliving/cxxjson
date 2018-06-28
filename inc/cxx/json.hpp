@@ -104,27 +104,6 @@ namespace cxx
   template <typename... F>
   overload(F...)->overload<F...>;
 
-  inline namespace literals
-  {
-    /*
-     *
-     */
-    constexpr auto operator""_key(std::string::const_pointer p, std::string::size_type s) noexcept
-    {
-      struct sec {
-      };
-      struct impl {
-        std::string::const_pointer const ptr;
-        std::string::size_type const size;
-        constexpr impl(sec, std::string::const_pointer x, std::string::size_type y)
-            : ptr(x), size(y)
-        {
-        }
-      };
-      return impl(sec{}, p, s);
-    }
-  }
-
   /*
    *
    */
@@ -167,7 +146,14 @@ namespace cxx
     /*
      *
      */
-    using key = decltype(""_key);
+    struct key {
+      std::string::const_pointer const ptr;
+      std::string::size_type const size;
+      constexpr key(std::string::const_pointer x, std::string::size_type y) noexcept
+          : ptr(x), size(y)
+      {
+      }
+    };
 
     template <typename T>
     static constexpr auto is_alternative = json::alternatives::contains<T>;
@@ -260,6 +246,22 @@ namespace cxx
   private:
     object storage;
   };
+
+  inline namespace literals
+  {
+    /*
+     *
+     */
+    constexpr auto operator""_key(std::string::const_pointer p, std::string::size_type s) noexcept
+    {
+      return ::cxx::json::key(p, s);
+    }
+
+    /*
+    *
+    */
+    std::pair<json::key const, json> operator>>(json::key, json) noexcept;
+  }
 
   /*
    *
