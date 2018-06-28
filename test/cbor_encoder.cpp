@@ -204,5 +204,8 @@ TEST_CASE("official cbor test vectors")
                         14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}) ==
           "98190102030405060708090a0b0c0d0e0f101112131415161718181819"_hex);
   REQUIRE(cbor::encode(cxx::json::document()) == "a0"_hex);
-  REQUIRE(cbor::encode({{"a"_key, 1}, {"b"_key, {2, 3}}}) == "a26161016162820203"_hex);
+  REQUIRE(cbor::encode({"a"_key >> 1, {"b"_key, {2, 3}}}) == "a26161016162820203"_hex);
+  REQUIRE(cbor::encode({"a", {"b"_key >> "c"}}) == "826161a161626163"_hex);
+  REQUIRE(cbor::encode({"a"_key >> "A", "b"_key >> "B", "c"_key >> "C", "d"_key >> "D",
+                        "e"_key >> "E"}) == "a56161614161626142616361436164614461656145"_hex);
 }
