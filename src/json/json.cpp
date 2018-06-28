@@ -80,3 +80,9 @@ bool ::cxx::operator!=(json const& lhs, json const& rhs) noexcept
 {
   return !(lhs == rhs);
 }
+
+auto ::cxx::literals::operator>>(::cxx::json::key key, ::cxx::json value) noexcept
+    -> std::pair<::cxx::json::key const, ::cxx::json>
+{
+  return std::pair<cxx::json::key const, cxx::json>{key, std::move(value)};
+}

@@ -173,10 +173,10 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, 
                               std::initializer_list<std::pair<cxx::json::key const, cxx::json>>>);
   cxx::json const json = {
       // clang-format off
-      {"lorem"_key, 42},
-      {"ipsum"_key, true},
-      {"dolor"_key, cxx::json::null},
-      {"sit"_key, 3.14}
+      "lorem"_key >> 42,
+      "ipsum"_key >> true,
+      "dolor"_key >> cxx::json::null,
+      "sit"_key >> 3.14
       // clang-format on
   };
 
@@ -200,11 +200,11 @@ TEST_CASE("can create cxx::json from nested document")
   using namespace cxx::literals;
   cxx::json const json = {
       // clang-format off
-      {"lorem"_key, 42},
+      "lorem"_key >> 42,
       {"ipsum"_key,
         {
-          {"dolor"_key, cxx::json::null},
-          {"sit"_key, 3.14}
+          "dolor"_key >> cxx::json::null,
+          "sit"_key >> 3.14
         }
       }
       // clang-format on
@@ -218,9 +218,9 @@ TEST_CASE("can create cxx::json from nested document")
 
   cxx::json const other = {
       // clang-format off
-      {"a"_key,
-        {
-          {"b"_key, "c"}
+      {
+        "a"_key, {
+          "b"_key >> "c"
         }
       }
       // clang-format on
