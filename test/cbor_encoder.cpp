@@ -155,3 +155,54 @@ TEST_CASE("cbor can encode documents")
   REQUIRE(cbor::encode({{"lorem"_key, 42}, {"ipsum"_key, "dolor"}}) ==
           "a265697073756d65646f6c6f72656c6f72656d182a"_hex);
 }
+
+TEST_CASE("official cbor test vectors")
+{
+  REQUIRE(cbor::encode(0) == "00"_hex);
+  REQUIRE(cbor::encode(1) == "01"_hex);
+  REQUIRE(cbor::encode(10) == "0a"_hex);
+  REQUIRE(cbor::encode(23) == "17"_hex);
+  REQUIRE(cbor::encode(24) == "1818"_hex);
+  REQUIRE(cbor::encode(25) == "1819"_hex);
+  REQUIRE(cbor::encode(100) == "1864"_hex);
+  REQUIRE(cbor::encode(1000) == "1903e8"_hex);
+  REQUIRE(cbor::encode(1000000) == "1a000f4240"_hex);
+  REQUIRE(cbor::encode(1000000000000) == "1b000000e8d4a51000"_hex);
+  // REQUIRE(cbor::encode(18446744073709551615) == "1bffffffffffff,
+  // 0xffff"_hex);
+  // error: integer constant is so large that it is unsigned
+  // REQUIRE(cbor::encode(/*bignum*/18446744073709551616) ==
+  //         "c249010000000000000000"_hex);
+  // error: integer constant is too large for its type
+  // REQUIRE(cbor::encode(-18446744073709551616) ==
+  //         "3bffffffffffffffff"_hex);
+  // error: integer constant is too large for its type
+  // REQUIRE(cbor::encode(-18446744073709551617) ==
+  //         "c349010000000000000000"_hex);
+  // error: integer constant is too large for its type
+  REQUIRE(cbor::encode(-1) == "20"_hex);
+  REQUIRE(cbor::encode(-10) == "29"_hex);
+  REQUIRE(cbor::encode(-100) == "3863"_hex);
+  REQUIRE(cbor::encode(-1000) == "3903e7"_hex);
+  // REQUIRE(cbor::encode(-0.0) == "f98000"_hex);
+  // sizeof(double) == 8
+  REQUIRE(cbor::encode(1.0e+300) == "fb7e37e43c8800759c"_hex);
+  REQUIRE(cbor::encode(false) == "f4"_hex);
+  REQUIRE(cbor::encode(true) == "f5"_hex);
+  REQUIRE(cbor::encode(cxx::json::null) == "f6"_hex);
+  REQUIRE(cbor::encode("") == "60"_hex);
+  REQUIRE(cbor::encode("a") == "6161"_hex);
+  REQUIRE(cbor::encode("IETF") == "6449455446"_hex);
+  REQUIRE(cbor::encode("\"\\") == "62225c"_hex);
+  REQUIRE(cbor::encode("ü") == "62c3bc"_hex);
+  REQUIRE(cbor::encode("水") == "63e6b0b4"_hex);
+  REQUIRE(cbor::encode("𐅑") == "64f0908591"_hex);
+  REQUIRE(cbor::encode(cxx::json::array()) == "80"_hex);
+  REQUIRE(cbor::encode({1, 2, 3}) == "83010203"_hex);
+  REQUIRE(cbor::encode({1, {2, 3}, {4, 5}}) == "8301820203820405"_hex);
+  REQUIRE(cbor::encode({1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
+                        14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}) ==
+          "98190102030405060708090a0b0c0d0e0f101112131415161718181819"_hex);
+  REQUIRE(cbor::encode(cxx::json::document()) == "a0"_hex);
+  REQUIRE(cbor::encode({{"a"_key, 1}, {"b"_key, {2, 3}}}) == "a26161016162820203"_hex);
+}

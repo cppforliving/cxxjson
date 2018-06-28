@@ -19,7 +19,6 @@ namespace
   using base_type = std::decay_t<decltype(base_type_impl<T>())>;
 
   struct initial_byte {
-    static inline constexpr base_type<cxx::byte> max_insitu = 23;
     struct type {
       // static inline constexpr base_type<cxx::byte> positive = 0;
       static inline constexpr base_type<cxx::byte> negative = 1;
@@ -31,6 +30,7 @@ namespace
       // static inline constexpr base_type<cxx::byte> special = 7;
     };
     struct value {
+      static inline constexpr base_type<cxx::byte> max_insitu = 23;
       static inline constexpr base_type<cxx::byte> False = 0xf4;
       static inline constexpr base_type<cxx::byte> True = 0xf5;
       static inline constexpr base_type<cxx::byte> Null = 0xf6;
@@ -80,9 +80,9 @@ namespace detail
   cxx::byte& encode_positive_integer(std::uint64_t x, cxx::json::byte_stream& stream) noexcept
   {
     auto& init = stream.emplace_back(cxx::byte(x));
-    if (x <= initial_byte::max_insitu) return init;
+    if (x <= initial_byte::value::max_insitu) return init;
     auto const code = sum((x >> 32) != 0, (x >> 16) != 0, (x >> 8) != 0);
-    init = cxx::byte(initial_byte::max_insitu + code + 1);
+    init = cxx::byte(initial_byte::value::max_insitu + code + 1);
     auto const space = (1u << code);
     auto it = stream.insert(std::end(stream), space, {});
     switch (code)
