@@ -44,9 +44,14 @@ TEST_CASE("cbor can decodec integers")
     REQUIRE(cbor::decode("190100"_hex) == item{0x0100, cbor::byte_view{}});
     REQUIRE(cbor::decode("1903e8"_hex) == item{0x03e8, cbor::byte_view{}});
   }
-  SECTION("two additional bytes integer")
+  SECTION("four additional bytes integer")
   {
     REQUIRE_THROWS_AS(cbor::decode("1a000f42"_hex), cbor::buffer_error);
     REQUIRE(cbor::decode("1aeb2f4240"_hex) == item{0xeb2f4240, cbor::byte_view{}});
+  }
+  SECTION("eight additional bytes integer")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("1b00000000000000"_hex), cbor::buffer_error);
+    REQUIRE(cbor::decode("1b1122334455667788"_hex) == item{0x1122334455667788, cbor::byte_view{}});
   }
 }

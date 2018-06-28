@@ -14,12 +14,20 @@ namespace
       [](std::uint8_t, cxx::cbor::byte_view bytes) -> std::int64_t {
         return static_cast<std::int64_t>(bytes.front());
       },
-      [](std::uint16_t x, cxx::cbor::byte_view bytes) -> std::int64_t {
-        x = *reinterpret_cast<std::uint16_t const*>(bytes.data());
-        return ntohs(x);
+      [](std::uint16_t, cxx::cbor::byte_view bytes) -> std::int64_t {
+        return ntohs(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
       },
       [](std::uint32_t, cxx::cbor::byte_view bytes) -> std::int64_t {
         return ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
+      },
+      [](std::uint64_t x, cxx::cbor::byte_view bytes) -> std::int64_t {
+        x = (static_cast<std::uint64_t>(
+                 ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data())))
+             << 32) |
+            ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data() + sizeof(std::uint32_t)));
+        if (x > std::numeric_limits<std::int64_t>::max())
+          throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
+        return static_cast<std::int64_t>(x);
       });
 
   template <typename Sink>
@@ -77,9 +85,7 @@ namespace
       case 0x1a:
         return parse(std::uint32_t{0}, bytes, sink);
       case 0x1b:
-        if (std::size(bytes) < (1u << (additional - 0x17)))
-          throw cxx::cbor::buffer_error("not enough data to decode json");
-        throw cxx::cbor::unsupported("integer format not yet supported");
+        return parse(std::uint64_t{0}, bytes, sink);
       default:
         throw cxx::cbor::data_error("meaningless additional data in initial byte");
     }

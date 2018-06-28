@@ -32,3 +32,10 @@ static void cxx_cbor_decode_four_additional_bytes_integer(benchmark::State& stat
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
 }
 BENCHMARK(cxx_cbor_decode_four_additional_bytes_integer);
+
+static void cxx_cbor_decode_eight_additional_bytes_integer(benchmark::State& state)
+{
+  auto const bytes = "1b1122334455667788"_hex;
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_eight_additional_bytes_integer);
