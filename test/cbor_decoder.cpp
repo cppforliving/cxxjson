@@ -9,6 +9,7 @@ using cbor = cxx::cbor;
 
 TEST_CASE("cbor can decodec integers")
 {
+  using item = std::pair<cxx::json, cbor::byte_view>;
   SECTION("throws exception when empty buffer is passed")
   {
     REQUIRE_THROWS_AS(cbor::decode(""_hex), cbor::buffer_error);
@@ -25,22 +26,32 @@ TEST_CASE("cbor can decodec integers")
   }
   SECTION("initial byte integer")
   {
-    REQUIRE(cbor::decode("00"_hex).first == 0);
-    REQUIRE(cbor::decode("00"_hex).second.empty());
-    REQUIRE(cbor::decode("01"_hex).first == 1);
-    REQUIRE(cbor::decode("01"_hex).second.empty());
-    REQUIRE(cbor::decode("17"_hex).first == 23);
-    REQUIRE(cbor::decode("17"_hex).second.empty());
+    REQUIRE(cbor::decode("00"_hex) == item{0, cbor::byte_view{}});
+    REQUIRE(cbor::decode("01"_hex) == item{1, cbor::byte_view{}});
+    REQUIRE(cbor::decode("17"_hex) == item{23, cbor::byte_view{}});
   }
   SECTION("single additional byte integer")
   {
     REQUIRE_THROWS_AS(cbor::decode("1c"_hex), cbor::data_error);
     REQUIRE_THROWS_AS(cbor::decode("18"_hex), cbor::buffer_error);
-    REQUIRE(cbor::decode("1800"_hex).first == 0x00);
-    REQUIRE(cbor::decode("1800"_hex).second.empty());
-    REQUIRE(cbor::decode("1818"_hex).first == 0x18);
-    REQUIRE(cbor::decode("1818"_hex).second.empty());
-    REQUIRE(cbor::decode("18ff"_hex).first == 0xff);
-    REQUIRE(cbor::decode("18ff"_hex).second.empty());
+    REQUIRE(cbor::decode("1800"_hex) == item{0x00, cbor::byte_view{}});
+    REQUIRE(cbor::decode("1818"_hex) == item{0x18, cbor::byte_view{}});
+    REQUIRE(cbor::decode("18ff"_hex) == item{0xff, cbor::byte_view{}});
+  }
+  SECTION("two additional bytes integer")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("1900"_hex), cbor::buffer_error);
+    REQUIRE(cbor::decode("190100"_hex) == item{0x0100, cbor::byte_view{}});
+    REQUIRE(cbor::decode("1903e8"_hex) == item{0x03e8, cbor::byte_view{}});
+  }
+  SECTION("four additional bytes integer")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("1a000f42"_hex), cbor::buffer_error);
+    REQUIRE(cbor::decode("1aeb2f4240"_hex) == item{0xeb2f4240, cbor::byte_view{}});
+  }
+  SECTION("eight additional bytes integer")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("1b00000000000000"_hex), cbor::buffer_error);
+    REQUIRE(cbor::decode("1b1122334455667788"_hex) == item{0x1122334455667788, cbor::byte_view{}});
   }
 }
