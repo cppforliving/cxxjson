@@ -38,7 +38,7 @@ namespace cxx::traits
     template <typename U>
     using type = any_of<U>;
   };
-}
+} // namespace cxx::traits
 
 namespace cxx::meta
 {
@@ -62,10 +62,10 @@ namespace cxx::meta
     template <template <typename...> typename F, typename Head, typename... Tail>
     static constexpr auto find_impl() noexcept
     {
-      if
-        constexpr(F<Head>::value) return quote<Head>{};
-      else if
-        constexpr(sizeof...(Tail) > 0) return find_impl<F, Tail...>();
+      if constexpr (F<Head>::value)
+        return quote<Head>{};
+      else if constexpr (sizeof...(Tail) > 0)
+        return find_impl<F, Tail...>();
       else
         throw 1; // throw in constexpr function is a compile time error
     }
@@ -88,7 +88,7 @@ namespace cxx::meta
     template <template <typename...> typename F>
     using find = typename decltype(type_list::find_impl<F, T...>())::type;
   };
-}
+} // namespace cxx::meta
 
 namespace cxx
 {
@@ -258,10 +258,10 @@ namespace cxx
     }
 
     /*
-    *
-    */
+     *
+     */
     std::pair<json::key const, json> operator>>(json::key, json) noexcept;
-  }
+  } // namespace literals
 
   /*
    *
@@ -281,12 +281,13 @@ namespace cxx
   /*
    *
    */
-  constexpr auto const visit =
-      overload([](auto&& f, json& x) -> decltype(
-                   auto) { return std::visit(std::forward<decltype(f)>(f), to_object(x)); },
-               [](auto&& f, json const& x) -> decltype(auto) {
-                 return std::visit(std::forward<decltype(f)>(f), to_object(x));
-               });
+  constexpr auto const visit = overload(
+      [](auto&& f, json& x) -> decltype(auto) {
+        return std::visit(std::forward<decltype(f)>(f), to_object(x));
+      },
+      [](auto&& f, json const& x) -> decltype(auto) {
+        return std::visit(std::forward<decltype(f)>(f), to_object(x));
+      });
 
   /*
    *
@@ -316,7 +317,7 @@ namespace cxx
   template <typename T>
   auto operator!=(T const& lhs, json const& rhs) noexcept
       -> std::enable_if_t<json::is_compatibile<T>, bool>;
-}
+} // namespace cxx
 
 /*
  *
@@ -327,8 +328,8 @@ auto ::cxx::operator==(json const& j, T const& rhs) noexcept
 {
   using type = std::conditional_t<json::is_alternative<T>, T, json::compatibile_alternative<T>>;
   auto const func = [&rhs](auto const& lhs) -> bool {
-    if
-      constexpr(std::is_same_v<decltype(lhs), type const&>) return lhs == rhs;
+    if constexpr (std::is_same_v<decltype(lhs), type const&>)
+      return lhs == rhs;
     else
       return false;
   };

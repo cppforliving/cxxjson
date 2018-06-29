@@ -26,7 +26,7 @@ namespace
                          cxx::json::byte_stream::size_type const needed) {
     if (available(stream) < needed) append(stream, needed);
   };
-}
+} // namespace
 
 namespace detail
 {
@@ -102,7 +102,8 @@ namespace detail
     assure(stream, sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
     ::cxx::codec::cbor::initial(encode_positive_integer(std::size(x), stream))->major =
         ::cxx::codec::cbor::initial_byte::type::document;
-    for (auto const & [ key, value ] : x) {
+    for (auto const& [key, value] : x)
+    {
       ::detail::encode(key, stream);
       ::detail::encode(value, stream);
     }
@@ -132,7 +133,7 @@ namespace detail
   {
     cxx::visit([&stream](auto const& x) { ::detail::encode(x, stream); }, json);
   }
-}
+} // namespace detail
 
 auto ::cxx::cbor::encode(json const& j) noexcept -> json::byte_stream
 {

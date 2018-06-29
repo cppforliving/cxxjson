@@ -43,7 +43,8 @@ TEST_CASE("cbor can encode positive integers")
 {
   SECTION("that fit on initial byte")
   {
-    for (int i = 0; i < 0x18; i++) {
+    for (int i = 0; i < 0x18; i++)
+    {
       auto const bytes = cbor::encode(i);
       REQUIRE(std::size(bytes) == 1);
       REQUIRE(bytes[0] == cxx::byte(i));
@@ -75,7 +76,8 @@ TEST_CASE("cbor can encode negative integers")
 {
   SECTION("that fit on initial byte")
   {
-    for (int i = -1; i > -0x19; --i) {
+    for (int i = -1; i > -0x19; --i)
+    {
       auto const bytes = cbor::encode(i);
       REQUIRE(std::size(bytes) == 1);
       REQUIRE(bytes[0] == cxx::byte((-i - 1) | 0b00100000));

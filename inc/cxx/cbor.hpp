@@ -26,4 +26,4 @@ namespace cxx
     static json decode(json::byte_stream const&);
     static json decode(byte_view&);
   };
-}
+} // namespace cxx

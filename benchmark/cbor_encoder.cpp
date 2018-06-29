@@ -8,9 +8,7 @@ template <typename T>
 static void cxx_cbor_encode(benchmark::State& state)
 {
   T const t{};
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(cxx::cbor::encode(t));
-  }
+  for (auto _ : state) { benchmark::DoNotOptimize(cxx::cbor::encode(t)); }
 }
 
 template <std::int64_t N>

@@ -32,3 +32,10 @@ static void cxx_cbor_decode_unicode_string(benchmark::State& state)
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
 }
 BENCHMARK(cxx_cbor_decode_unicode_string);
+
+static void cxx_cbor_decode_array(benchmark::State& state)
+{
+  auto const bytes = cxx::cbor::encode({0, {"lorem", 0xff}, "ipsum"});
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_array);
