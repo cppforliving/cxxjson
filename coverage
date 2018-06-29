@@ -1,0 +1,4 @@
+#! /bin/sh
+
+gcovr --root=build --filter='.*cxx.*' --filter='.*src.*' --fail-under-line=100 && \
+gcovr --branch --root=build --filter='.*cxx.*' --filter='.*src.*' --exclude-unreachable-branches --print-summary
