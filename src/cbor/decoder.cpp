@@ -102,6 +102,26 @@ namespace
   }
 
   template <typename Sink>
+  cxx::cbor::byte_view parse(tag_t<initial_byte::type::bytes>,
+                             cxx::byte byte,
+                             cxx::cbor::byte_view bytes,
+                             Sink sink)
+  {
+    std::size_t const size = [&] {
+      std::size_t n = 0;
+      auto const leftovers = parse(tag<initial_byte::type::positive>, byte, bytes,
+                                   [&n](std::int64_t x) { n = static_cast<std::size_t>(x); });
+      if (std::size(leftovers) < n)
+        throw cxx::cbor::buffer_error("not enough data to decode byte_stream");
+      bytes = leftovers;
+      return n;
+    }();
+    sink(cxx::cbor::byte_view(bytes.data(), size));
+    bytes.remove_prefix(size);
+    return bytes;
+  }
+
+  template <typename Sink>
   cxx::cbor::byte_view parse(cxx::cbor::byte_view bytes, Sink sink)
   {
     if (bytes.empty()) throw cxx::cbor::buffer_error("not enough data to decode json");
@@ -113,6 +133,8 @@ namespace
         return parse(tag<initial_byte::type::positive>, byte, bytes, sink);
       case initial_byte::type::negative:
         return parse(tag<initial_byte::type::negative>, byte, bytes, sink);
+      case initial_byte::type::bytes:
+        return parse(tag<initial_byte::type::bytes>, byte, bytes, sink);
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
     }
@@ -128,7 +150,11 @@ auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 auto ::cxx::cbor::decode(byte_view& bytes) -> json
 {
   cxx::json json;
-  auto sink = cxx::overload([&json](std::int64_t x) { json = x; }, [](auto const&) {});
+  auto sink = cxx::overload([&json](std::int64_t x) { json = x; },
+                            [&json](cxx::cbor::byte_view x) {
+                              json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
+                            },
+                            [](auto const&) {});
   bytes = parse(bytes, sink);
   return json;
 }

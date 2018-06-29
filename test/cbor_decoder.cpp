@@ -9,7 +9,6 @@ using cbor = cxx::cbor;
 
 TEST_CASE("cbor throws exception on unsupported tag")
 {
-  REQUIRE_THROWS_AS(cbor::decode("40"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("60"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("80"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("a0"_hex), cbor::unsupported);
@@ -97,5 +96,30 @@ TEST_CASE("cbor can decode negative integers")
     REQUIRE(json == -0x19);
     json = cbor::decode(leftovers);
     REQUIRE(json == -0x0100);
+  }
+}
+
+TEST_CASE("cbor can decode byte_stream")
+{
+  SECTION("can identify truncation erros")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("41"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("44000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("59000200"_hex), cbor::buffer_error);
+  }
+  REQUIRE(cbor::decode("40"_hex) == ""_hex);
+  REQUIRE(cbor::decode("4100"_hex) == "00"_hex);
+  REQUIRE(cbor::decode("41ff"_hex) == "ff"_hex);
+  REQUIRE(cbor::decode("5803112233"_hex) == "112233"_hex);
+  SECTION("decoding with leftovers")
+  {
+    auto const bytes = "411158022233590003445566"_hex;
+    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json json = cbor::decode(leftovers);
+    REQUIRE(json == "11"_hex);
+    json = cbor::decode(leftovers);
+    REQUIRE(json == "2233"_hex);
+    json = cbor::decode(leftovers);
+    REQUIRE(json == "445566"_hex);
   }
 }
