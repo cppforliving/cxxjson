@@ -2,6 +2,7 @@
 #include "test/catch.hpp"
 #include "test/utils.hpp"
 
+using namespace std::string_literals;
 using namespace cxx::literals;
 using namespace test::literals;
 
@@ -9,7 +10,6 @@ using cbor = cxx::cbor;
 
 TEST_CASE("cbor throws exception on unsupported tag")
 {
-  REQUIRE_THROWS_AS(cbor::decode("60"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("80"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("a0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
@@ -121,5 +121,37 @@ TEST_CASE("cbor can decode byte_stream")
     REQUIRE(json == "2233"_hex);
     json = cbor::decode(leftovers);
     REQUIRE(json == "445566"_hex);
+  }
+}
+
+TEST_CASE("cbor can decode unicode")
+{
+  SECTION("can identify truncation erros")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("61"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("64000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("79000200"_hex), cbor::buffer_error);
+  }
+  REQUIRE(cbor::decode("60"_hex) == ""s);
+  REQUIRE(cbor::decode("6161"_hex) == "a");
+  REQUIRE(cbor::decode("6449455446"_hex) == "IETF");
+  REQUIRE(cbor::decode("62225c"_hex) == "\"\\");
+  REQUIRE(cbor::decode("62c3bc"_hex) == "ü");
+  REQUIRE(cbor::decode("63e6b0b4"_hex) == "水");
+  REQUIRE(cbor::decode("64f0908591"_hex) == "𐅑");
+  REQUIRE(cbor::decode("656c6f72656d"_hex) == "lorem");
+  REQUIRE(
+      cbor::decode("7820697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex) ==
+      "ipsum dolor sit amet consectetur");
+  SECTION("decoding with leftovers")
+  {
+    auto const bytes = "656c6f72656d644945544662c3bc"_hex;
+    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json json = cbor::decode(leftovers);
+    REQUIRE(json == "lorem");
+    json = cbor::decode(leftovers);
+    REQUIRE(json == "IETF");
+    json = cbor::decode(leftovers);
+    REQUIRE(json == "ü");
   }
 }
