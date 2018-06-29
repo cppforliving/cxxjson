@@ -107,15 +107,16 @@ namespace
   }
 }
 
-auto ::cxx::cbor::decode(json::byte_stream const& stream) -> std::pair<json, byte_view>
+auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 {
-  return decode(byte_view(stream.data(), std::size(stream)));
+  byte_view data(stream.data(), std::size(stream));
+  return decode(data);
 }
 
-auto ::cxx::cbor::decode(byte_view bytes) -> std::pair<json, byte_view>
+auto ::cxx::cbor::decode(byte_view& bytes) -> json
 {
-  std::pair<json, byte_view> ret;
-  auto sink = cxx::overload([&ret](std::int64_t x) { ret.first = x; }, [](auto const&) {});
-  ret.second = parse(bytes, sink);
-  return ret;
+  cxx::json json;
+  auto sink = cxx::overload([&json](std::int64_t x) { json = x; }, [](auto const&) {});
+  bytes = parse(bytes, sink);
+  return json;
 }

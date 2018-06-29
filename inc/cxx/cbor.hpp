@@ -23,7 +23,7 @@ namespace cxx
     };
     using byte_view = std::basic_string_view<json::byte_stream::value_type>;
     static json::byte_stream encode(json const&) noexcept;
-    static std::pair<json, byte_view> decode(json::byte_stream const&);
-    static std::pair<json, byte_view> decode(byte_view);
+    static json decode(json::byte_stream const&);
+    static json decode(byte_view&);
   };
 }
