@@ -1,5 +1,8 @@
 #include "inc/cxx/cbor.hpp"
 #include "test/catch.hpp"
+#include "test/utils.hpp"
+
+using namespace test::literals;
 
 using cbor = cxx::cbor;
 
@@ -26,4 +29,15 @@ TEST_CASE("cbor transcoding of integers")
   assert_transcoding(-0x10001);
   assert_transcoding(-0x100000000);
   assert_transcoding(-0x100000001);
+}
+
+TEST_CASE("cbor transcoding of byte_stream")
+{
+  auto const assert_transcoding = [](cxx::json::byte_stream const& x) {
+    REQUIRE(cbor::decode(cbor::encode(x)) == x);
+  };
+  assert_transcoding(""_hex);
+  assert_transcoding("00"_hex);
+  assert_transcoding("00112233445566778899aabbccddeeff00112233445566"_hex);
+  assert_transcoding("00112233445566778899aabbccddeeff0011223344556677"_hex);
 }
