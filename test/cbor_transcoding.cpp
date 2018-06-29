@@ -41,3 +41,19 @@ TEST_CASE("cbor transcoding of byte_stream")
   assert_transcoding("00112233445566778899aabbccddeeff00112233445566"_hex);
   assert_transcoding("00112233445566778899aabbccddeeff0011223344556677"_hex);
 }
+
+TEST_CASE("cbor transcoding of unicode strings")
+{
+  auto const assert_transcoding = [](char const* x) {
+    REQUIRE(cbor::decode(cbor::encode(x)) == x);
+  };
+  assert_transcoding("");
+  assert_transcoding("a");
+  assert_transcoding("IETF");
+  assert_transcoding("\"\\");
+  assert_transcoding("ü");
+  assert_transcoding("水");
+  assert_transcoding("𐅑");
+  assert_transcoding("lorem");
+  assert_transcoding("ipsum dolor sit amet consectetur");
+}

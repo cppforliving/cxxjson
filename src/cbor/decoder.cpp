@@ -122,6 +122,18 @@ namespace
   }
 
   template <typename Sink>
+  cxx::cbor::byte_view parse(tag_t<initial_byte::type::unicode>,
+                             cxx::byte byte,
+                             cxx::cbor::byte_view bytes,
+                             Sink sink)
+  {
+    return parse(tag<initial_byte::type::bytes>, byte, bytes, [&sink](cxx::cbor::byte_view x) {
+      sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
+                            std::size(x)));
+    });
+  }
+
+  template <typename Sink>
   cxx::cbor::byte_view parse(cxx::cbor::byte_view bytes, Sink sink)
   {
     if (bytes.empty()) throw cxx::cbor::buffer_error("not enough data to decode json");
@@ -135,6 +147,8 @@ namespace
         return parse(tag<initial_byte::type::negative>, byte, bytes, sink);
       case initial_byte::type::bytes:
         return parse(tag<initial_byte::type::bytes>, byte, bytes, sink);
+      case initial_byte::type::unicode:
+        return parse(tag<initial_byte::type::unicode>, byte, bytes, sink);
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
     }
@@ -154,7 +168,7 @@ auto ::cxx::cbor::decode(byte_view& bytes) -> json
                             [&json](cxx::cbor::byte_view x) {
                               json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
                             },
-                            [](auto const&) {});
+                            [&json](std::string_view x) { json = x; }, [](auto const&) {});
   bytes = parse(bytes, sink);
   return json;
 }

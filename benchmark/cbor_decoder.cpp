@@ -25,3 +25,10 @@ static void cxx_cbor_decode_byte_stream(benchmark::State& state)
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
 }
 BENCHMARK(cxx_cbor_decode_byte_stream);
+
+static void cxx_cbor_decode_unicode_string(benchmark::State& state)
+{
+  auto const bytes = cxx::cbor::encode("ipsum dolor sit amet consectetur");
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_unicode_string);
