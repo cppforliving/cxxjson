@@ -98,10 +98,7 @@ namespace
                              Sink sink)
   {
     return parse(tag<initial_byte::type::positive>, byte, bytes,
-      [&sink](std::int64_t x) {
-        sink(-(x + 1));
-      }
-    );
+                 [&sink](std::int64_t x) { sink(-(x + 1)); });
   }
 
   template <typename Sink>
@@ -113,9 +110,9 @@ namespace
     std::size_t const size = [&] {
       std::size_t n = 0;
       auto const leftovers = parse(tag<initial_byte::type::positive>, byte, bytes,
-        [&n](std::int64_t x) { n = static_cast<std::size_t>(x); }
-      );
-      if(std::size(leftovers) < n) throw cxx::cbor::buffer_error("not enough data to decode byte_stream");
+                                   [&n](std::int64_t x) { n = static_cast<std::size_t>(x); });
+      if (std::size(leftovers) < n)
+        throw cxx::cbor::buffer_error("not enough data to decode byte_stream");
       bytes = leftovers;
       return n;
     }();
@@ -130,23 +127,24 @@ namespace
                              cxx::cbor::byte_view bytes,
                              Sink sink)
   {
-    return parse(tag<initial_byte::type::bytes>, byte, bytes,
-      [&sink](cxx::cbor::byte_view x) {
-        sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()), std::size(x)));
-      }
-    );
+    return parse(tag<initial_byte::type::bytes>, byte, bytes, [&sink](cxx::cbor::byte_view x) {
+      sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
+                            std::size(x)));
+    });
   }
 
   auto const emplace_to = [](cxx::json::array& array) {
     return cxx::overload(
-      [&array](std::int64_t x) { array.emplace_back(x); },
-      [&array](cxx::cbor::byte_view x) { array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x))); },
-      [&array](std::string_view x) { array.emplace_back(x); },
-      [&array](cxx::json::array x) { array.emplace_back(std::move(x)); }
-      //document
-      //null
-      //bool
-      //double
+        [&array](std::int64_t x) { array.emplace_back(x); },
+        [&array](cxx::cbor::byte_view x) {
+          array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
+        },
+        [&array](std::string_view x) { array.emplace_back(x); },
+        [&array](cxx::json::array x) { array.emplace_back(std::move(x)); }
+        // document
+        // null
+        // bool
+        // double
     );
   };
 
@@ -157,13 +155,12 @@ namespace
                              Sink sink)
   {
     cxx::json::array::size_type size = 0;
-    bytes = parse(tag<initial_byte::type::positive>, byte, bytes, [&size](std::int64_t x) {
-      size = static_cast<cxx::json::array::size_type>(x);
-    });
-    //if(size > safety_check) throw an error
+    bytes = parse(tag<initial_byte::type::positive>, byte, bytes,
+                  [&size](std::int64_t x) { size = static_cast<cxx::json::array::size_type>(x); });
+    // if(size > safety_check) throw an error
     cxx::json::array array;
     array.reserve(size);
-    while(size--) bytes = parse(bytes, emplace_to(array));
+    while (size--) bytes = parse(bytes, emplace_to(array));
     sink(std::move(array));
     return bytes;
   }
@@ -190,7 +187,7 @@ namespace
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
     }
   }
-}
+} // namespace
 
 auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 {
@@ -201,19 +198,13 @@ auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 auto ::cxx::cbor::decode(byte_view& bytes) -> json
 {
   cxx::json json;
-  auto sink = cxx::overload(
-    [&json](std::int64_t x) { json = x; },
-    [&json](cxx::cbor::byte_view x) {
-      json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
-    },
-    [&json](std::string_view x) {
-      json = x;
-    },
-    [&json](cxx::json::array x) {
-      json = std::move(x);
-    },
-    [](auto const&) {}
-  );
+  auto sink =
+      cxx::overload([&json](std::int64_t x) { json = x; },
+                    [&json](cxx::cbor::byte_view x) {
+                      json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
+                    },
+                    [&json](std::string_view x) { json = x; },
+                    [&json](cxx::json::array x) { json = std::move(x); }, [](auto const&) {});
   bytes = parse(bytes, sink);
   return json;
 }

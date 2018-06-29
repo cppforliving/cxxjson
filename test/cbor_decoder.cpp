@@ -163,7 +163,11 @@ TEST_CASE("cbor can decode arrays")
     REQUIRE_THROWS_AS(cbor::decode("8417181819ffff"_hex), cbor::buffer_error);
   }
   REQUIRE(cbor::decode("80"_hex) == cxx::json::array());
-  REQUIRE(cbor::decode("8117"_hex) == cxx::json::array({0x17}));
+  SECTION("one item")
+  {
+    cxx::json::array const array = {0x17};
+    REQUIRE(cbor::decode("8117"_hex) == array);
+  }
   REQUIRE(cbor::decode("82171818"_hex) == cxx::json::array({0x17, 0x18}));
   REQUIRE(cbor::decode("9803171818656c6f72656d"_hex) == cxx::json::array({0x17, 0x18, "lorem"}));
   REQUIRE(cbor::decode("9803008218ff656c6f72656d6449455446"_hex) ==
@@ -173,7 +177,10 @@ TEST_CASE("cbor can decode arrays")
     auto const bytes = "811782181862c3bc9803656c6f72656d2020"_hex;
     cbor::byte_view leftovers(bytes.data(), std::size(bytes));
     cxx::json json = cbor::decode(leftovers);
-    REQUIRE(json == cxx::json::array({0x17}));
+    {
+      cxx::json::array const array = {0x17};
+      REQUIRE(json == array);
+    }
     json = cbor::decode(leftovers);
     REQUIRE(json == cxx::json::array({0x18, "ü"}));
     json = cbor::decode(leftovers);

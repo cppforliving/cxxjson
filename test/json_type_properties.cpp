@@ -24,6 +24,8 @@ namespace cxx::traits
   constexpr bool is_equality_comparable_v = is_equality_comparable<T, U>::value;
 } // namespace cxx::traits
 
+static_assert(sizeof(cxx::json) == sizeof(cxx::json::object));
+
 static_assert(cxx::json::null == cxx::json::null);
 static_assert(!(cxx::json::null != cxx::json::null));
 
