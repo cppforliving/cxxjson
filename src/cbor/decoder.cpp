@@ -92,6 +92,16 @@ namespace
   }
 
   template <typename Sink>
+  cxx::cbor::byte_view parse(tag_t<initial_byte::type::negative>,
+                             cxx::byte byte,
+                             cxx::cbor::byte_view bytes,
+                             Sink sink)
+  {
+    return parse(tag<initial_byte::type::positive>, byte, bytes,
+                 [&sink](std::int64_t x) { sink(-(x + 1)); });
+  }
+
+  template <typename Sink>
   cxx::cbor::byte_view parse(cxx::cbor::byte_view bytes, Sink sink)
   {
     if (bytes.empty()) throw cxx::cbor::buffer_error("not enough data to decode json");
@@ -101,6 +111,8 @@ namespace
     {
       case initial_byte::type::positive:
         return parse(tag<initial_byte::type::positive>, byte, bytes, sink);
+      case initial_byte::type::negative:
+        return parse(tag<initial_byte::type::negative>, byte, bytes, sink);
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
     }
