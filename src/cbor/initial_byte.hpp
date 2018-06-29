@@ -6,8 +6,7 @@ namespace cxx::codec::cbor
   template <typename T>
   constexpr auto base_type_impl()
   {
-    if
-      constexpr(std::is_enum_v<T>) { return std::underlying_type_t<T>{}; }
+    if constexpr (std::is_enum_v<T>) { return std::underlying_type_t<T>{}; }
     else
     {
       return T{};
@@ -53,4 +52,4 @@ namespace cxx::codec::cbor
       [](cxx::json::byte_stream::const_reference byte) -> initial_byte const* {
         return reinterpret_cast<initial_byte const*>(&byte);
       });
-}
+} // namespace cxx::codec::cbor

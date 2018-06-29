@@ -72,7 +72,8 @@ cxx::json make(cxx::json::array array, byte_view bytes)
   if (bytes.empty()) return cxx::json{std::move(array)};
   auto size = static_cast<std::size_t>(bytes.front());
   bytes.remove_prefix(1);
-  while (size--) {
+  while (size--)
+  {
     if (bytes.empty()) break;
     array.emplace_back(factory(bytes));
     bytes.remove_prefix(1);
@@ -85,7 +86,8 @@ cxx::json make(cxx::json::document doc, byte_view bytes)
   if (bytes.empty()) return cxx::json{std::move(doc)};
   auto size = static_cast<std::size_t>(bytes.front());
   bytes.remove_prefix(1);
-  while (size--) {
+  while (size--)
+  {
     if (bytes.empty()) break;
     auto key = do_make(bytes);
     bytes.remove_prefix(1);

@@ -192,7 +192,7 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, 
             }
           )
           // clang-format on
-          );
+  );
 }
 
 TEST_CASE("can create cxx::json from nested document")

@@ -133,6 +133,38 @@ namespace
     });
   }
 
+  auto const emplace_to = [](cxx::json::array& array) {
+    return cxx::overload(
+        [&array](std::int64_t x) { array.emplace_back(x); },
+        [&array](cxx::cbor::byte_view x) {
+          array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
+        },
+        [&array](std::string_view x) { array.emplace_back(x); },
+        [&array](cxx::json::array x) { array.emplace_back(std::move(x)); }
+        // document
+        // null
+        // bool
+        // double
+    );
+  };
+
+  template <typename Sink>
+  cxx::cbor::byte_view parse(tag_t<initial_byte::type::array>,
+                             cxx::byte byte,
+                             cxx::cbor::byte_view bytes,
+                             Sink sink)
+  {
+    cxx::json::array::size_type size = 0;
+    bytes = parse(tag<initial_byte::type::positive>, byte, bytes,
+                  [&size](std::int64_t x) { size = static_cast<cxx::json::array::size_type>(x); });
+    // if(size > safety_check) throw an error
+    cxx::json::array array;
+    array.reserve(size);
+    while (size--) bytes = parse(bytes, emplace_to(array));
+    sink(std::move(array));
+    return bytes;
+  }
+
   template <typename Sink>
   cxx::cbor::byte_view parse(cxx::cbor::byte_view bytes, Sink sink)
   {
@@ -149,11 +181,13 @@ namespace
         return parse(tag<initial_byte::type::bytes>, byte, bytes, sink);
       case initial_byte::type::unicode:
         return parse(tag<initial_byte::type::unicode>, byte, bytes, sink);
+      case initial_byte::type::array:
+        return parse(tag<initial_byte::type::array>, byte, bytes, sink);
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
     }
   }
-}
+} // namespace
 
 auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 {
@@ -164,11 +198,13 @@ auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 auto ::cxx::cbor::decode(byte_view& bytes) -> json
 {
   cxx::json json;
-  auto sink = cxx::overload([&json](std::int64_t x) { json = x; },
-                            [&json](cxx::cbor::byte_view x) {
-                              json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
-                            },
-                            [&json](std::string_view x) { json = x; }, [](auto const&) {});
+  auto sink =
+      cxx::overload([&json](std::int64_t x) { json = x; },
+                    [&json](cxx::cbor::byte_view x) {
+                      json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
+                    },
+                    [&json](std::string_view x) { json = x; },
+                    [&json](cxx::json::array x) { json = std::move(x); }, [](auto const&) {});
   bytes = parse(bytes, sink);
   return json;
 }

@@ -57,3 +57,13 @@ TEST_CASE("cbor transcoding of unicode strings")
   assert_transcoding("lorem");
   assert_transcoding("ipsum dolor sit amet consectetur");
 }
+
+TEST_CASE("cbor transcoding of arrays")
+{
+  auto const assert_transcoding = [](cxx::json::array const& x) {
+    REQUIRE(cbor::decode(cbor::encode(x)) == x);
+  };
+  assert_transcoding({});
+  assert_transcoding({0x00, "lorem"});
+  assert_transcoding({0x00, "lorem", {"ipsum", 0xff}});
+}

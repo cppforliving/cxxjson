@@ -13,7 +13,8 @@
 ::cxx::json::json(std::initializer_list<std::pair<json::key const, json>> init) : json()
 {
   auto& doc = cxx::get<cxx::json::document>(*this);
-  for (auto & [ k, v ] : init) {
+  for (auto& [k, v] : init)
+  {
     doc.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
                 std::forward_as_tuple(std::move(v)));
   }
@@ -56,14 +57,13 @@ auto ::cxx::json::operator[](std::size_t k) const -> json const&
 
 auto ::cxx::json::size() const noexcept -> std::size_t
 {
-  auto const func =
-      cxx::overload([](cxx::json::null_t) -> std::size_t { return 0; },
-                    [](auto const& x) -> std::size_t {
-                      if
-                        constexpr(traits::has_size_v<decltype(x)>) return std::size(x);
-                      else
-                        return 1;
-                    });
+  auto const func = cxx::overload([](cxx::json::null_t) -> std::size_t { return 0; },
+                                  [](auto const& x) -> std::size_t {
+                                    if constexpr (traits::has_size_v<decltype(x)>)
+                                      return std::size(x);
+                                    else
+                                      return 1;
+                                  });
   return cxx::visit(func, *this);
 }
 
