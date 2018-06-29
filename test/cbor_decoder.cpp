@@ -7,21 +7,21 @@ using namespace test::literals;
 
 using cbor = cxx::cbor;
 
-TEST_CASE("cbor can decodec integers")
+TEST_CASE("cbor throws exception on unsupported tag")
+{
+  REQUIRE_THROWS_AS(cbor::decode("40"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("60"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("80"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("a0"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
+}
+
+TEST_CASE("cbor can decode positive integers")
 {
   SECTION("throws exception when empty buffer is passed")
   {
     REQUIRE_THROWS_AS(cbor::decode(""_hex), cbor::buffer_error);
-  }
-  SECTION("throws exception when decoding unsupported type")
-  {
-    REQUIRE_THROWS_AS(cbor::decode("20"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("40"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("60"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("80"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("a0"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
   }
   SECTION("initial byte integer")
   {
@@ -66,5 +66,36 @@ TEST_CASE("cbor can decodec integers")
     json = cbor::decode(leftovers);
     REQUIRE(json == 0x1919);
     REQUIRE(std::empty(leftovers));
+  }
+}
+
+TEST_CASE("cbor can decode negative integers")
+{
+  SECTION("can identify truncation erros")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("38"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("3900"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("3a000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("3b00000000000000"_hex), cbor::buffer_error);
+  }
+  REQUIRE(cbor::decode("20"_hex) == -0x01);
+  REQUIRE(cbor::decode("37"_hex) == -0x18);
+  REQUIRE(cbor::decode("3818"_hex) == -0x19);
+  REQUIRE(cbor::decode("38ff"_hex) == -0x0100);
+  REQUIRE(cbor::decode("390100"_hex) == -0x101);
+  REQUIRE(cbor::decode("39ffff"_hex) == -0x10000);
+  REQUIRE(cbor::decode("3a00010000"_hex) == -0x10001);
+  REQUIRE(cbor::decode("3affffffff"_hex) == -0x100000000);
+  REQUIRE(cbor::decode("3b7fffffffffffffff"_hex) == std::numeric_limits<std::int64_t>::min());
+  SECTION("decoding with leftovers")
+  {
+    auto const bytes = "37381838ff"_hex;
+    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json json = cbor::decode(leftovers);
+    REQUIRE(json == -0x18);
+    json = cbor::decode(leftovers);
+    REQUIRE(json == -0x19);
+    json = cbor::decode(leftovers);
+    REQUIRE(json == -0x0100);
   }
 }
