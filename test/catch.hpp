@@ -105,7 +105,7 @@ namespace Catch {
 // CATCH_CONFIG_WINDOWS_SEH : is Windows SEH supported?
 // CATCH_CONFIG_POSIX_SIGNALS : are POSIX signals supported?
 // ****************
-// Note to maintainers: if new toggles are added please document them
+// Note to maintainers: if new toggles are added please dictionary them
 // in configuration.md, too
 // ****************
 
@@ -2859,7 +2859,7 @@ namespace Catch {
 // header for non obj-usage
 
 ///////////////////////////////////////////////////////////////////////////////
-// This protocol is really only here for (self) documenting purposes, since
+// This protocol is really only here for (self) dictionarying purposes, since
 // all its methods are optional.
 @protocol OcFixture
 
@@ -12530,7 +12530,7 @@ namespace Catch {
     XmlReporter::~XmlReporter() = default;
 
     std::string XmlReporter::getDescription() {
-        return "Reports test results as an XML document";
+        return "Reports test results as an XML dictionary";
     }
 
     std::string XmlReporter::getStylesheetRef() const {

@@ -130,7 +130,7 @@ namespace cxx
     /*
      *
      */
-    using document = std::map<std::string, json>;
+    using dictionary = std::map<std::string, json>;
 
     /*
      *
@@ -141,7 +141,7 @@ namespace cxx
      *
      */
     using alternatives = meta::
-        type_list<document, std::int64_t, array, std::string, byte_stream, double, bool, null_t>;
+        type_list<dictionary, std::int64_t, array, std::string, byte_stream, double, bool, null_t>;
 
     /*
      *

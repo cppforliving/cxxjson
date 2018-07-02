@@ -23,7 +23,7 @@ namespace cxx::codec::cbor
       static inline constexpr base_type<cxx::byte> bytes = 2;
       static inline constexpr base_type<cxx::byte> unicode = 3;
       static inline constexpr base_type<cxx::byte> array = 4;
-      static inline constexpr base_type<cxx::byte> document = 5;
+      static inline constexpr base_type<cxx::byte> dictionary = 5;
       // static inline constexpr base_type<cxx::byte> tag = 6;
       // static inline constexpr base_type<cxx::byte> special = 7;
     };

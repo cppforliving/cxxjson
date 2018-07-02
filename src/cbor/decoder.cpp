@@ -141,7 +141,7 @@ namespace
         },
         [&array](std::string_view x) { array.emplace_back(x); },
         [&array](cxx::json::array x) { array.emplace_back(std::move(x)); }
-        // document
+        // dictionary
         // null
         // bool
         // double

@@ -81,9 +81,9 @@ cxx::json make(cxx::json::array array, byte_view bytes)
   return cxx::json{std::move(array)};
 }
 
-cxx::json make(cxx::json::document doc, byte_view bytes)
+cxx::json make(cxx::json::dictionary dict, byte_view bytes)
 {
-  if (bytes.empty()) return cxx::json{std::move(doc)};
+  if (bytes.empty()) return cxx::json{std::move(dict)};
   auto size = static_cast<std::size_t>(bytes.front());
   bytes.remove_prefix(1);
   while (size--)
@@ -92,10 +92,10 @@ cxx::json make(cxx::json::document doc, byte_view bytes)
     auto key = do_make(bytes);
     bytes.remove_prefix(1);
     if (bytes.empty()) break;
-    doc[std::move(key)] = factory(bytes);
+    dict[std::move(key)] = factory(bytes);
     bytes.remove_prefix(1);
   }
-  return cxx::json{std::move(doc)};
+  return cxx::json{std::move(dict)};
 }
 
 cxx::json factory(byte_view bytes)
@@ -121,7 +121,7 @@ cxx::json factory(byte_view bytes)
       return make(cxx::json::array{}, bytes);
       break;
     case 5:
-      return make(cxx::json::document{}, bytes);
+      return make(cxx::json::dictionary{}, bytes);
       break;
     case 6:
       return make(cxx::json::byte_stream{}, bytes);

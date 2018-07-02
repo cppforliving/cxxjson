@@ -97,11 +97,11 @@ namespace detail
     for (auto const& item : x) ::detail::encode(item, stream);
   }
 
-  void encode(cxx::json::document const& x, cxx::json::byte_stream& stream) noexcept
+  void encode(cxx::json::dictionary const& x, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
     ::cxx::codec::cbor::initial(encode_positive_integer(std::size(x), stream))->major =
-        ::cxx::codec::cbor::initial_byte::type::document;
+        ::cxx::codec::cbor::initial_byte::type::dictionary;
     for (auto const& [key, value] : x)
     {
       ::detail::encode(key, stream);
