@@ -25,7 +25,7 @@ namespace cxx::codec::cbor
       static inline constexpr base_type<cxx::byte> array = 4;
       static inline constexpr base_type<cxx::byte> dictionary = 5;
       // static inline constexpr base_type<cxx::byte> tag = 6;
-      // static inline constexpr base_type<cxx::byte> special = 7;
+      static inline constexpr base_type<cxx::byte> special = 7;
     };
     struct value {
       static inline constexpr base_type<cxx::byte> max_insitu = 23;

@@ -206,12 +206,26 @@ TEST_CASE("cbor can decode dictionaties")
           cxx::json::dictionary({{"a", 0x18}, {"lorem", "IETF"}}));
   SECTION("decoding with leftovers")
   {
-    //                        a 0x18       b 0x19    c 0x1a       d 0x1b    e 0x1c    f 0x1d
     auto const bytes = "a161611818a2616218196163181aa36164181b6165181c6166181d"_hex;
     cbor::byte_view leftovers(bytes.data(), std::size(bytes));
     REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"a", 0x18}}));
     REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"b", 0x19}, {"c", 0x1a}}));
     REQUIRE(cbor::decode(leftovers) ==
             cxx::json::dictionary({{"d", 0x1b}, {"e", 0x1c}, {"f", 0x1d}}));
+  }
+}
+
+TEST_CASE("cbor can decode simple special values")
+{
+  REQUIRE(cbor::decode("f4"_hex) == false);
+  REQUIRE(cbor::decode("f5"_hex) == true);
+  REQUIRE(cbor::decode("f6"_hex) == cxx::json::null);
+  SECTION("decoding with leftovers")
+  {
+    auto const bytes = "f4f5f6"_hex;
+    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(cbor::decode(leftovers) == false);
+    REQUIRE(cbor::decode(leftovers) == true);
+    REQUIRE(cbor::decode(leftovers) == cxx::json::null);
   }
 }
