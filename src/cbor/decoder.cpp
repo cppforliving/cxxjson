@@ -210,7 +210,7 @@ namespace
                              cxx::cbor::byte_view bytes,
                              Sink sink)
   {
-    auto const simple_value = [](cxx::byte v, auto sink) {
+    auto const simple_value = [sink](cxx::byte v) {
       auto const x = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(v);
       switch (x)
       {
@@ -242,7 +242,7 @@ namespace
       case 0xf8:
         if (std::empty(bytes))
           throw cxx::cbor::buffer_error("not enough data to decode simple value");
-        simple_value(bytes.at(0), sink);
+        simple_value(bytes.at(0));
         bytes.remove_prefix(1);
         break;
       default:
