@@ -137,6 +137,7 @@ namespace
     using target_t = std::decay_t<decltype(target)>;
     using key_t = cxx::json::dictionary::key_type;
     auto impl = [&target, key](auto&& x) {
+      (void)key;
       if constexpr (std::is_same_v<target_t, cxx::json::array>)
       { target.emplace_back(std::forward<decltype(x)>(x)); }
       else if constexpr (std::is_same_v<target_t, cxx::json::dictionary>)
