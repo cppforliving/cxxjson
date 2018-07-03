@@ -10,7 +10,6 @@ using cbor = cxx::cbor;
 
 TEST_CASE("cbor throws exception on unsupported tag")
 {
-  REQUIRE_THROWS_AS(cbor::decode("a0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
 }
@@ -185,5 +184,34 @@ TEST_CASE("cbor can decode arrays")
     REQUIRE(json == cxx::json::array({0x18, "ü"}));
     json = cbor::decode(leftovers);
     REQUIRE(json == cxx::json::array({"lorem", -0x01, -0x01}));
+  }
+}
+
+TEST_CASE("cbor can decode dictionaties")
+{
+  SECTION("can identify truncation erros")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("a1"_hex), cbor::buffer_error);
+  }
+  REQUIRE(cbor::decode("a0"_hex) == cxx::json::dictionary());
+  SECTION("one item")
+  {
+    REQUIRE(cbor::decode("a161611818"_hex) == cxx::json::dictionary({{"a", 0x18}}));
+    REQUIRE(cbor::decode("a1656c6f72656d6449455446"_hex) ==
+            cxx::json::dictionary({{"lorem", "IETF"}}));
+  }
+  REQUIRE(cbor::decode("a261611818656c6f72656d6449455446"_hex) ==
+          cxx::json::dictionary({{"a", 0x18}, {"lorem", "IETF"}}));
+  REQUIRE(cbor::decode("a2656c6f72656d644945544661611818"_hex) ==
+          cxx::json::dictionary({{"a", 0x18}, {"lorem", "IETF"}}));
+  SECTION("decoding with leftovers")
+  {
+    //                        a 0x18       b 0x19    c 0x1a       d 0x1b    e 0x1c    f 0x1d
+    auto const bytes = "a161611818a2616218196163181aa36164181b6165181c6166181d"_hex;
+    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"a", 0x18}}));
+    REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"b", 0x19}, {"c", 0x1a}}));
+    REQUIRE(cbor::decode(leftovers) ==
+            cxx::json::dictionary({{"d", 0x1b}, {"e", 0x1c}, {"f", 0x1d}}));
   }
 }

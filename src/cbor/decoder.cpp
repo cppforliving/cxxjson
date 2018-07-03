@@ -133,20 +133,35 @@ namespace
     });
   }
 
-  auto const emplace_to = [](cxx::json::array& array) {
-    return cxx::overload(
-        [&array](std::int64_t x) { array.emplace_back(x); },
-        [&array](cxx::cbor::byte_view x) {
-          array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
-        },
-        [&array](std::string_view x) { array.emplace_back(x); },
-        [&array](cxx::json::array x) { array.emplace_back(std::move(x)); }
-        // dictionary
-        // null
-        // bool
-        // double
-    );
-  };
+  auto const emplace_to = cxx::overload(
+      [](cxx::json::array& array) {
+        return cxx::overload(
+            [&array](std::int64_t x) { array.emplace_back(x); },
+            [&array](cxx::cbor::byte_view x) {
+              array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
+            },
+            [&array](std::string_view x) { array.emplace_back(x); },
+            [&array](cxx::json::array x) { array.emplace_back(std::move(x)); },
+            [&array](cxx::json::dictionary x) { array.emplace_back(std::move(x)); },
+            [](auto const&) {
+              throw cxx::cbor::unsupported("decoding given type is not yet supported");
+            });
+      },
+      [](cxx::json::dictionary& dict, std::string_view key) {
+        using key_t = cxx::json::dictionary::key_type;
+        return cxx::overload(
+            [&dict, key](std::int64_t x) { dict.try_emplace(key_t(key), x); },
+            [&dict, key](cxx::cbor::byte_view x) {
+              dict.try_emplace(key_t(key),
+                               cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
+            },
+            [&dict, key](std::string_view x) { dict.try_emplace(key_t(key), x); },
+            [&dict, key](cxx::json::array x) { dict.try_emplace(key_t(key), std::move(x)); },
+            [&dict, key](cxx::json::dictionary x) { dict.try_emplace(key_t(key), std::move(x)); },
+            [](auto const&) {
+              throw cxx::cbor::unsupported("decoding given type is not yet supported");
+            });
+      });
 
   template <typename Sink>
   cxx::cbor::byte_view parse(tag_t<initial_byte::type::array>,
@@ -162,6 +177,33 @@ namespace
     array.reserve(size);
     while (size--) bytes = parse(bytes, emplace_to(array));
     sink(std::move(array));
+    return bytes;
+  }
+
+  template <typename Sink>
+  cxx::cbor::byte_view parse(tag_t<initial_byte::type::dictionary>,
+                             cxx::byte byte,
+                             cxx::cbor::byte_view bytes,
+                             Sink sink)
+  {
+    cxx::json::array::size_type size = 0;
+    bytes = parse(tag<initial_byte::type::positive>, byte, bytes, [&size](std::int64_t x) {
+      size = static_cast<cxx::json::dictionary::size_type>(x);
+    });
+    // if(size > safety_check) throw an error
+    cxx::json::dictionary dict;
+    while (size--)
+    {
+      if (std::empty(bytes))
+        throw cxx::cbor::buffer_error("not enough data to decode dictionary key");
+      auto const init = bytes.front();
+      bytes.remove_prefix(1);
+      std::string_view key;
+      bytes = parse(tag<initial_byte::type::unicode>, init, bytes,
+                    [&key](std::string_view x) { key = x; });
+      bytes = parse(bytes, emplace_to(dict, key));
+    }
+    sink(std::move(dict));
     return bytes;
   }
 
@@ -183,6 +225,8 @@ namespace
         return parse(tag<initial_byte::type::unicode>, byte, bytes, sink);
       case initial_byte::type::array:
         return parse(tag<initial_byte::type::array>, byte, bytes, sink);
+      case initial_byte::type::dictionary:
+        return parse(tag<initial_byte::type::dictionary>, byte, bytes, sink);
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
     }
@@ -204,7 +248,11 @@ auto ::cxx::cbor::decode(byte_view& bytes) -> json
                       json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
                     },
                     [&json](std::string_view x) { json = x; },
-                    [&json](cxx::json::array x) { json = std::move(x); }, [](auto const&) {});
+                    [&json](cxx::json::array x) { json = std::move(x); },
+                    [&json](cxx::json::dictionary x) { json = std::move(x); },
+                    [](auto const&) {
+                      throw cxx::cbor::unsupported("decoding given type is not yet supported");
+                    });
   bytes = parse(bytes, sink);
   return json;
 }

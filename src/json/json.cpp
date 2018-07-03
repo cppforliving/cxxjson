@@ -16,7 +16,7 @@
   for (auto& [k, v] : init)
   {
     dict.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
-                std::forward_as_tuple(std::move(v)));
+                 std::forward_as_tuple(std::move(v)));
   }
 }
 
