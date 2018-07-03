@@ -6,28 +6,28 @@
 TEST_CASE("cxx::get can use const cxx::json")
 {
   cxx::json const json;
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
   REQUIRE_THROWS_AS(cxx::get<cxx::json::array>(json), std::bad_variant_access);
 
-  auto const& document = cxx::get<cxx::json::document>(json);
-  REQUIRE(json == document);
+  auto const& dictionary = cxx::get<cxx::json::dictionary>(json);
+  REQUIRE(json == dictionary);
 }
 
 TEST_CASE("cxx::get can use non-const cxx::json")
 {
   cxx::json json;
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
   REQUIRE_THROWS_AS(cxx::get<cxx::json::array>(json), std::bad_variant_access);
 
-  auto& document = cxx::get<cxx::json::document>(json);
-  document["lorem"] = 42l;
-  REQUIRE(json == document);
+  auto& dictionary = cxx::get<cxx::json::dictionary>(json);
+  dictionary["lorem"] = 42l;
+  REQUIRE(json == dictionary);
 }
 
 TEST_CASE("const cxx::json allows item access for string keys")
 {
   using namespace cxx::literals;
-  SECTION("throws exception if underlying object is not a document")
+  SECTION("throws exception if underlying object is not a dictionary")
   {
     cxx::json const json = 42;
     REQUIRE_THROWS_AS(json["sit"], std::bad_variant_access);
@@ -53,7 +53,7 @@ TEST_CASE("const cxx::json allows item access for string keys")
 TEST_CASE("non-const cxx::json allows item access for string keys")
 {
   using namespace cxx::literals;
-  SECTION("throws exception if underlying object is not a document")
+  SECTION("throws exception if underlying object is not a dictionary")
   {
     cxx::json json = 42;
     REQUIRE_THROWS_AS(json["sit"], std::bad_variant_access);
@@ -74,7 +74,7 @@ TEST_CASE("non-const cxx::json allows item access for string keys")
   SECTION("returns new default created cxx::json object")
   {
     auto& nyu = json["sit"];
-    REQUIRE(cxx::holds_alternative<cxx::json::document>(nyu));
+    REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(nyu));
     REQUIRE(std::size(nyu) == 0);
     REQUIRE(std::empty(nyu));
     nyu["consectetur"] = 7;

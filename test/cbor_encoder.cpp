@@ -151,9 +151,9 @@ TEST_CASE("cbor can encode arrays")
   REQUIRE(cbor::encode({7, "lorem"}) == "8207656c6f72656d"_hex);
 }
 
-TEST_CASE("cbor can encode documents")
+TEST_CASE("cbor can encode dictionarys")
 {
-  REQUIRE(cbor::encode(cxx::json::document()) == "a0"_hex);
+  REQUIRE(cbor::encode(cxx::json::dictionary()) == "a0"_hex);
   REQUIRE(cbor::encode({{"lorem"_key, 42}, {"ipsum"_key, "dolor"}}) ==
           "a265697073756d65646f6c6f72656c6f72656d182a"_hex);
 }
@@ -205,7 +205,7 @@ TEST_CASE("official cbor test vectors")
   REQUIRE(cbor::encode({1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
                         14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}) ==
           "98190102030405060708090a0b0c0d0e0f101112131415161718181819"_hex);
-  REQUIRE(cbor::encode(cxx::json::document()) == "a0"_hex);
+  REQUIRE(cbor::encode(cxx::json::dictionary()) == "a0"_hex);
   REQUIRE(cbor::encode({"a"_key >> 1, {"b"_key, {2, 3}}}) == "a26161016162820203"_hex);
   REQUIRE(cbor::encode({"a", {"b"_key >> "c"}}) == "826161a161626163"_hex);
   REQUIRE(cbor::encode({"a"_key >> "A", "b"_key >> "B", "c"_key >> "C", "d"_key >> "D",

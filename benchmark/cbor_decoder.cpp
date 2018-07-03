@@ -39,3 +39,10 @@ static void cxx_cbor_decode_array(benchmark::State& state)
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
 }
 BENCHMARK(cxx_cbor_decode_array);
+
+static void cxx_cbor_decode_dictionary(benchmark::State& state)
+{
+  auto const bytes = cxx::cbor::encode({"lorem"_key >> "ipsum", "dolor"_key >> 42});
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_dictionary);

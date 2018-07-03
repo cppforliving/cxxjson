@@ -35,7 +35,7 @@ static_assert(std::is_copy_constructible_v<cxx::json>);
 static_assert(std::is_nothrow_move_assignable_v<cxx::json>);
 static_assert(std::is_copy_assignable_v<cxx::json>);
 
-static_assert(cxx::json::is_alternative<cxx::json::document>);
+static_assert(cxx::json::is_alternative<cxx::json::dictionary>);
 static_assert(cxx::json::is_alternative<cxx::json::array>);
 static_assert(cxx::json::is_alternative<std::string>);
 static_assert(cxx::json::is_alternative<cxx::json::byte_stream>);
@@ -44,8 +44,8 @@ static_assert(cxx::json::is_alternative<double>);
 static_assert(cxx::json::is_alternative<bool>);
 static_assert(cxx::json::is_alternative<cxx::json::null_t>);
 
-static_assert(std::is_constructible_v<cxx::json, cxx::json::document const&>);
-static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::document&&>);
+static_assert(std::is_constructible_v<cxx::json, cxx::json::dictionary const&>);
+static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::dictionary&&>);
 static_assert(std::is_constructible_v<cxx::json, cxx::json::array const&>);
 static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::array&&>);
 static_assert(std::is_constructible_v<cxx::json, std::string const&>);
@@ -57,8 +57,8 @@ static_assert(std::is_nothrow_constructible_v<cxx::json, double>);
 static_assert(std::is_nothrow_constructible_v<cxx::json, bool>);
 static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::null_t>);
 
-static_assert(std::is_assignable_v<cxx::json, cxx::json::document const&>);
-static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::document&&>);
+static_assert(std::is_assignable_v<cxx::json, cxx::json::dictionary const&>);
+static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::dictionary&&>);
 static_assert(std::is_assignable_v<cxx::json, cxx::json::array const&>);
 static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::array&&>);
 static_assert(std::is_assignable_v<cxx::json, std::string const&>);
@@ -106,7 +106,7 @@ static_assert(std::is_assignable_v<cxx::json, char const*>);
 static_assert(std::is_assignable_v<cxx::json, char const (&)[6]>);
 
 static_assert(cxx::traits::is_equality_comparable_v<cxx::json, cxx::json>);
-static_assert(cxx::traits::is_equality_comparable_v<cxx::json, cxx::json::document>);
+static_assert(cxx::traits::is_equality_comparable_v<cxx::json, cxx::json::dictionary>);
 static_assert(cxx::traits::is_equality_comparable_v<cxx::json, std::int64_t>);
 static_assert(cxx::traits::is_equality_comparable_v<cxx::json, cxx::json::array>);
 static_assert(cxx::traits::is_equality_comparable_v<cxx::json, std::string>);
