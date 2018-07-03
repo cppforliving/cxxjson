@@ -133,39 +133,31 @@ namespace
     });
   }
 
-  auto const emplace_to = cxx::overload(
-      [](cxx::json::array& array) {
-        return cxx::overload(
-            [&array](std::int64_t x) { array.emplace_back(x); },
-            [&array](cxx::cbor::byte_view x) {
-              array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
-            },
-            [&array](std::string_view x) { array.emplace_back(x); },
-            [&array](cxx::json::array x) { array.emplace_back(std::move(x)); },
-            [&array](cxx::json::dictionary x) { array.emplace_back(std::move(x)); },
-            [&array](bool x) { array.emplace_back(x); },
-            [&array](cxx::json::null_t x) { array.emplace_back(x); },
-            [](auto const&) {
-              throw cxx::cbor::unsupported("decoding given type is not yet supported");
-            });
-      },
-      [](cxx::json::dictionary& dict, std::string_view key) {
-        using key_t = cxx::json::dictionary::key_type;
-        return cxx::overload(
-            [&dict, key](std::int64_t x) { dict.try_emplace(key_t(key), x); },
-            [&dict, key](cxx::cbor::byte_view x) {
-              dict.try_emplace(key_t(key),
-                               cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
-            },
-            [&dict, key](std::string_view x) { dict.try_emplace(key_t(key), x); },
-            [&dict, key](cxx::json::array x) { dict.try_emplace(key_t(key), std::move(x)); },
-            [&dict, key](cxx::json::dictionary x) { dict.try_emplace(key_t(key), std::move(x)); },
-            [&dict, key](bool x) { dict.try_emplace(key_t(key), x); },
-            [&dict, key](cxx::json::null_t x) { dict.try_emplace(key_t(key), x); },
-            [](auto const&) {
-              throw cxx::cbor::unsupported("decoding given type is not yet supported");
-            });
-      });
+  auto const emplace_to = [](auto& target, std::string_view key = std::string_view()) {
+    using target_t = std::decay_t<decltype(target)>;
+    using key_t = cxx::json::dictionary::key_type;
+    auto impl = [&target, key](auto&& x) {
+      if constexpr (std::is_same_v<target_t, cxx::json::array>)
+      { target.emplace_back(std::forward<decltype(x)>(x)); }
+      else if constexpr (std::is_same_v<target_t, cxx::json::dictionary>)
+      {
+        target.try_emplace(key_t(key), std::forward<decltype(x)>(x));
+      }
+      else if constexpr (std::is_same_v<target_t, cxx::json>)
+      {
+        target = std::forward<decltype(x)>(x);
+      }
+      else
+      {
+        throw 1;
+      }
+    };
+    return cxx::overload(
+        [impl](cxx::cbor::byte_view bytes) {
+          impl(cxx::json::byte_stream(bytes.data(), bytes.data() + std::size(bytes)));
+        },
+        impl);
+  };
 
   template <typename Sink>
   cxx::cbor::byte_view parse(tag_t<initial_byte::type::array>,
@@ -272,18 +264,6 @@ auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 auto ::cxx::cbor::decode(byte_view& bytes) -> json
 {
   cxx::json json;
-  auto sink =
-      cxx::overload([&json](std::int64_t x) { json = x; },
-                    [&json](cxx::cbor::byte_view x) {
-                      json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
-                    },
-                    [&json](std::string_view x) { json = x; },
-                    [&json](cxx::json::array x) { json = std::move(x); },
-                    [&json](cxx::json::dictionary x) { json = std::move(x); },
-                    [&json](bool x) { json = x; }, [&json](cxx::json::null_t x) { json = x; },
-                    [](auto const&) {
-                      throw cxx::cbor::unsupported("decoding given type is not yet supported");
-                    });
-  bytes = parse(bytes, sink);
+  bytes = parse(bytes, emplace_to(json));
   return json;
 }
