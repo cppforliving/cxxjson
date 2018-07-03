@@ -122,12 +122,11 @@ namespace detail
 
   void encode(double d, cxx::json::byte_stream& stream) noexcept
   {
-    static_assert(sizeof(double) == sizeof(std::uint64_t));
     assure(stream, sizeof(double) + 1);
     stream.emplace_back(cxx::byte(::cxx::codec::cbor::initial_byte::value::ieee_754_double));
-    auto& dest = *(stream.insert(std::end(stream), sizeof(double), cxx::byte()));
-    auto const x = htonll(*reinterpret_cast<std::uint64_t const*>(&d));
-    *(reinterpret_cast<double*>(&dest)) = *reinterpret_cast<double const*>(&x);
+    auto dest = stream.insert(std::end(stream), sizeof(double), cxx::byte());
+    auto const* first = reinterpret_cast<cxx::byte const*>(&d);
+    std::reverse_copy(first, first + sizeof(double), dest);
   }
 
   void encode(cxx::json const& json, cxx::json::byte_stream& stream) noexcept
