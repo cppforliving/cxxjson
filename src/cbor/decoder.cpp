@@ -22,10 +22,8 @@ namespace
         return ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
       },
       [](std::uint64_t x, cxx::cbor::byte_view bytes) -> std::int64_t {
-        x = (static_cast<std::uint64_t>(
-                 ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data())))
-             << 32) |
-            ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data() + sizeof(std::uint32_t)));
+        auto const* pu = static_cast<std::uint64_t const*>(static_cast<void const*>(bytes.data()));
+        x = cxx::ntohll(*pu);
         if (x > std::numeric_limits<std::int64_t>::max())
           throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
         return static_cast<std::int64_t>(x);
@@ -170,7 +168,8 @@ namespace
     cxx::json::array::size_type size = 0;
     bytes = parse(tag<initial_byte::type::positive>, byte, bytes,
                   [&size](std::int64_t x) { size = static_cast<cxx::json::array::size_type>(x); });
-    // if(size > safety_check) throw an error
+    if (size > cxx::cbor::max_size)
+      throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
     cxx::json::array array;
     array.reserve(size);
     while (size--) bytes = parse(bytes, emplace_to(array));
@@ -188,7 +187,8 @@ namespace
     bytes = parse(tag<initial_byte::type::positive>, byte, bytes, [&size](std::int64_t x) {
       size = static_cast<cxx::json::dictionary::size_type>(x);
     });
-    // if(size > safety_check) throw an error
+    if (size > cxx::cbor::max_size)
+      throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
     cxx::json::dictionary dict;
     while (size--)
     {
@@ -229,10 +229,8 @@ namespace
       }
     };
     auto const floating_value = [sink](cxx::cbor::byte_view b) {
-      double d = 0.0;
-      auto* dest = reinterpret_cast<cxx::byte*>(&d);
-      std::reverse_copy(b.data(), b.data() + sizeof(double), dest);
-      sink(d);
+      auto const* pd = static_cast<double const*>(static_cast<void const*>(b.data()));
+      sink(cxx::ntohd(*pd));
     };
     auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
     switch (value)

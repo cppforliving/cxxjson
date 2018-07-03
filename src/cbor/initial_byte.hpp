@@ -1,5 +1,36 @@
 #pragma once
 #include "inc/cxx/json.hpp"
+#include <arpa/inet.h>
+
+namespace cxx
+{
+  auto const htonll = [](std::uint64_t x) -> std::uint64_t {
+    return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
+           htonl(static_cast<std::uint32_t>(x >> 32));
+  };
+
+  auto const ntohll = [](std::uint64_t x) -> std::uint64_t {
+    auto const hi = static_cast<std::uint32_t>(x >> 32);
+    auto const lo = static_cast<std::uint32_t>(x & 0xffffffff);
+    return (static_cast<std::uint64_t>(ntohl(lo)) << 32) | ntohl(hi);
+  };
+
+  auto const htond = [](double d) -> double {
+    static_assert(sizeof(double) == sizeof(std::uint64_t));
+    static_assert(alignof(double) == alignof(std::uint64_t));
+    auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
+    *pu = htonll(*pu);
+    return d;
+  };
+
+  auto const ntohd = [](double d) -> double {
+    static_assert(sizeof(double) == sizeof(std::uint64_t));
+    static_assert(alignof(double) == alignof(std::uint64_t));
+    auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
+    *pu = ntohll(*pu);
+    return d;
+  };
+} // namespace cxx
 
 namespace cxx::codec::cbor
 {
