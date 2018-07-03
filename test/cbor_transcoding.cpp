@@ -67,3 +67,23 @@ TEST_CASE("cbor transcoding of arrays")
   assert_transcoding({0x00, "lorem"});
   assert_transcoding({0x00, "lorem", {"ipsum", 0xff}});
 }
+
+TEST_CASE("cbor transcoding of dictionaties")
+{
+  auto const assert_transcoding = [](cxx::json::dictionary const& x) {
+    REQUIRE(cbor::decode(cbor::encode(x)) == x);
+  };
+  assert_transcoding(cxx::json::dictionary());
+  assert_transcoding(cxx::json::dictionary({{"lorem", "ipsum"}, {"dolor", 0x18}}));
+  assert_transcoding(cxx::json::dictionary({{"dolor", 0x18}, {"lorem", "ipsum"}}));
+}
+
+TEST_CASE("cbor transcoding of simple special values")
+{
+  auto const assert_transcoding = [](auto const& x) {
+    REQUIRE(cbor::decode(cbor::encode(x)) == x);
+  };
+  assert_transcoding(false);
+  assert_transcoding(true);
+  assert_transcoding(cxx::json::null);
+}

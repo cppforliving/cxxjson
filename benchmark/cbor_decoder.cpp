@@ -46,3 +46,17 @@ static void cxx_cbor_decode_dictionary(benchmark::State& state)
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
 }
 BENCHMARK(cxx_cbor_decode_dictionary);
+
+static void cxx_cbor_decode_bool(benchmark::State& state)
+{
+  auto const bytes = cxx::cbor::encode(true);
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_bool);
+
+static void cxx_cbor_decode_null(benchmark::State& state)
+{
+  auto const bytes = cxx::cbor::encode(cxx::json::null);
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_null);
