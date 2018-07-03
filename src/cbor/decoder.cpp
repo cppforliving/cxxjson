@@ -1,5 +1,6 @@
 #include "inc/cxx/cbor.hpp"
 #include "src/cbor/initial_byte.hpp"
+#include <algorithm>
 #include <arpa/inet.h>
 
 namespace
@@ -227,6 +228,12 @@ namespace
           throw cxx::cbor::unsupported("decoding given type is not yet supported");
       }
     };
+    auto const floating_value = [sink](cxx::cbor::byte_view b) {
+      double d = 0.0;
+      auto* dest = reinterpret_cast<cxx::byte*>(&d);
+      std::reverse_copy(b.data(), b.data() + sizeof(double), dest);
+      sink(d);
+    };
     auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
     switch (value)
     {
@@ -244,6 +251,12 @@ namespace
           throw cxx::cbor::buffer_error("not enough data to decode simple value");
         simple_value(bytes.at(0));
         bytes.remove_prefix(1);
+        break;
+      case initial_byte::value::ieee_754_double:
+        if (std::size(bytes) < sizeof(double))
+          throw cxx::cbor::buffer_error("not enough data to decode double");
+        floating_value(bytes);
+        bytes.remove_prefix(sizeof(double));
         break;
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");

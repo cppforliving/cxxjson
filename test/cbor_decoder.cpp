@@ -233,3 +233,9 @@ TEST_CASE("cbor can decode simple special values")
     REQUIRE(cbor::decode(leftovers) == cxx::json::null);
   }
 }
+
+TEST_CASE("cbor can decode floating point numbers")
+{
+  REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
+  REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
+}
