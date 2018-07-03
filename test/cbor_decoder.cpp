@@ -217,12 +217,16 @@ TEST_CASE("cbor can decode dictionaties")
 
 TEST_CASE("cbor can decode simple special values")
 {
+  REQUIRE_THROWS_AS(cbor::decode("f8"_hex), cbor::buffer_error);
   REQUIRE(cbor::decode("f4"_hex) == false);
+  REQUIRE(cbor::decode("f8f4"_hex) == false);
   REQUIRE(cbor::decode("f5"_hex) == true);
+  REQUIRE(cbor::decode("f8f5"_hex) == true);
   REQUIRE(cbor::decode("f6"_hex) == cxx::json::null);
+  REQUIRE(cbor::decode("f8f6"_hex) == cxx::json::null);
   SECTION("decoding with leftovers")
   {
-    auto const bytes = "f4f5f6"_hex;
+    auto const bytes = "f4f8f5f6"_hex;
     cbor::byte_view leftovers(bytes.data(), std::size(bytes));
     REQUIRE(cbor::decode(leftovers) == false);
     REQUIRE(cbor::decode(leftovers) == true);

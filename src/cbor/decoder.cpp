@@ -210,17 +210,40 @@ namespace
                              cxx::cbor::byte_view bytes,
                              Sink sink)
   {
-    auto const additional = cxx::codec::cbor::initial(byte)->additional;
-    switch (additional)
+    auto const simple_value = [](cxx::byte v, auto sink) {
+      auto const x = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(v);
+      switch (x)
+      {
+        case initial_byte::value::False:
+          sink(false);
+          break;
+        case initial_byte::value::True:
+          sink(true);
+          break;
+        case initial_byte::value::Null:
+          sink(cxx::json::null);
+          break;
+        default:
+          throw cxx::cbor::unsupported("decoding given type is not yet supported");
+      }
+    };
+    auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
+    switch (value)
     {
-      case 0x1f & initial_byte::value::False:
+      case initial_byte::value::False:
         sink(false);
         break;
-      case 0x1f & initial_byte::value::True:
+      case initial_byte::value::True:
         sink(true);
         break;
-      case 0x1f & initial_byte::value::Null:
+      case initial_byte::value::Null:
         sink(cxx::json::null);
+        break;
+      case 0xf8:
+        if (std::empty(bytes))
+          throw cxx::cbor::buffer_error("not enough data to decode simple value");
+        simple_value(bytes.at(0), sink);
+        bytes.remove_prefix(1);
         break;
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
