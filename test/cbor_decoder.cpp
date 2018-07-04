@@ -12,6 +12,13 @@ TEST_CASE("cbor throws exception on unsupported tag")
 {
   REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
+  SECTION("infinite lenght collections")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::unsupported);
+    REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::unsupported);
+    REQUIRE_THROWS_AS(cbor::decode("9f"_hex), cbor::unsupported);
+    REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::unsupported);
+  }
 }
 
 TEST_CASE("cbor can decode positive integers")
@@ -201,6 +208,10 @@ TEST_CASE("cbor can decode dictionaties")
   SECTION("size exceeds limit")
   {
     REQUIRE_THROWS_AS(cbor::decode("ba00010000"_hex), cbor::unsupported);
+  }
+  SECTION("key type is not unicode")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("a118181818"_hex), cbor::unsupported);
   }
   REQUIRE(cbor::decode("a0"_hex) == cxx::json::dictionary());
   SECTION("one item")

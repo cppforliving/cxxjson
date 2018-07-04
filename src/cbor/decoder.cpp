@@ -85,6 +85,8 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
+      throw cxx::cbor::unsupported("infinite size collections are not supported");
     std::size_t const size = [&] {
       std::size_t n = 0;
       auto const leftovers = parse(tag<initial_byte::type::positive>, byte, bytes,
@@ -144,6 +146,8 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
+      throw cxx::cbor::unsupported("infinite size collections are not supported");
     cxx::json::array::size_type size = 0;
     bytes = parse(tag<initial_byte::type::positive>, byte, bytes,
                   [&size](std::int64_t x) { size = static_cast<cxx::json::array::size_type>(x); });
@@ -162,6 +166,8 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
+      throw cxx::cbor::unsupported("infinite size collections are not supported");
     cxx::json::dictionary::size_type size = 0;
     bytes = parse(tag<initial_byte::type::positive>, byte, bytes, [&size](std::int64_t x) {
       size = static_cast<cxx::json::dictionary::size_type>(x);
@@ -171,10 +177,13 @@ namespace
     cxx::json::dictionary dict;
     while (size--)
     {
-      if (std::empty(bytes))
+      if (std::size(bytes) < 2)
         throw cxx::cbor::truncation_error("not enough data to decode dictionary key");
       auto const init = bytes.front();
       bytes.remove_prefix(1);
+      if (cxx::codec::cbor::initial(bytes.front())->major != initial_byte::type::unicode)
+        throw cxx::cbor::unsupported(
+            "dictionary keys of type different thant unicode are not supported");
       std::string_view key;
       bytes = parse(tag<initial_byte::type::unicode>, init, bytes,
                     [&key](std::string_view x) { key = x; });
