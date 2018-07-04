@@ -32,6 +32,8 @@ stages:
   stage: sanitize
   before_script:
   - source ./config/sanitize.sh
+  - export UBSAN_OPTIONS=halt_on_error=1
+  - export ASAN_OPTIONS=abort_on_error=1
 
 .template: &benchmark
   stage: benchmark
