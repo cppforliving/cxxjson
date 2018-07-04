@@ -39,8 +39,8 @@ namespace cxx
     return d;
   };
 
-  auto const ntoh = cxx::overload([](std::uint16_t x) -> std::uint16_t { return ::ntohs(x); },
-                                  [](std::uint32_t x) -> std::uint32_t { return ::ntohl(x); },
+  auto const ntoh = cxx::overload([](std::uint16_t x) -> std::uint16_t { return ntohs(x); },
+                                  [](std::uint32_t x) -> std::uint32_t { return ntohl(x); },
                                   [](std::uint64_t x) -> std::uint64_t { return ntohll(x); },
                                   [](float x) -> float { return ntohf(x); },
                                   [](double x) -> double { return ntohd(x); });
