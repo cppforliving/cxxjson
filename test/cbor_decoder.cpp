@@ -53,7 +53,7 @@ TEST_CASE("cbor can decode positive integers")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "171818191919"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     cxx::json json = cbor::decode(leftovers);
     REQUIRE(json == 0x17);
     REQUIRE(std::size(leftovers) == 5);
@@ -87,7 +87,7 @@ TEST_CASE("cbor can decode negative integers")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "37381838ff"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     cxx::json json = cbor::decode(leftovers);
     REQUIRE(json == -0x18);
     json = cbor::decode(leftovers);
@@ -112,7 +112,7 @@ TEST_CASE("cbor can decode byte_stream")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "411158022233590003445566"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     cxx::json json = cbor::decode(leftovers);
     REQUIRE(json == "11"_hex);
     json = cbor::decode(leftovers);
@@ -144,7 +144,7 @@ TEST_CASE("cbor can decode unicode")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "656c6f72656d644945544662c3bc"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     cxx::json json = cbor::decode(leftovers);
     REQUIRE(json == "lorem");
     json = cbor::decode(leftovers);
@@ -179,7 +179,7 @@ TEST_CASE("cbor can decode arrays")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "811782181862c3bc9803656c6f72656d2020"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     cxx::json json = cbor::decode(leftovers);
     {
       cxx::json::array const array = {0x17};
@@ -216,7 +216,7 @@ TEST_CASE("cbor can decode dictionaties")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "a161611818a2616218196163181aa36164181b6165181c6166181d"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"a", 0x18}}));
     REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"b", 0x19}, {"c", 0x1a}}));
     REQUIRE(cbor::decode(leftovers) ==
@@ -236,7 +236,7 @@ TEST_CASE("cbor can decode simple special values")
   SECTION("decoding with leftovers")
   {
     auto const bytes = "f4f8f5f6"_hex;
-    cbor::byte_view leftovers(bytes.data(), std::size(bytes));
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     REQUIRE(cbor::decode(leftovers) == false);
     REQUIRE(cbor::decode(leftovers) == true);
     REQUIRE(cbor::decode(leftovers) == cxx::json::null);

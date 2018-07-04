@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <variant>
 #include <cstddef>
 #include <cstdint>
@@ -126,6 +127,11 @@ namespace cxx
      *
      */
     using byte_stream = std::vector<cxx::byte>;
+
+    /*
+     *
+     */
+    using byte_view = std::basic_string_view<byte_stream::value_type>;
 
     /*
      *

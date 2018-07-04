@@ -6,7 +6,7 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-  cxx::cbor::byte_view bytes(reinterpret_cast<cxx::byte const*>(data), size);
+  cxx::json::byte_view bytes(reinterpret_cast<cxx::byte const*>(data), size);
   try
   {
     while (!std::empty(bytes))

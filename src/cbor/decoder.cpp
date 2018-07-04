@@ -12,16 +12,16 @@ namespace
   constexpr tag_t<t> tag{};
 
   constexpr auto const ntohb = cxx::overload(
-      [](std::uint8_t, cxx::cbor::byte_view bytes) -> std::int64_t {
+      [](std::uint8_t, cxx::json::byte_view bytes) -> std::int64_t {
         return static_cast<std::int64_t>(bytes.front());
       },
-      [](std::uint16_t, cxx::cbor::byte_view bytes) -> std::int64_t {
+      [](std::uint16_t, cxx::json::byte_view bytes) -> std::int64_t {
         return cxx::ntoh(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
       },
-      [](std::uint32_t, cxx::cbor::byte_view bytes) -> std::int64_t {
+      [](std::uint32_t, cxx::json::byte_view bytes) -> std::int64_t {
         return cxx::ntoh(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
       },
-      [](std::uint64_t x, cxx::cbor::byte_view bytes) -> std::int64_t {
+      [](std::uint64_t x, cxx::json::byte_view bytes) -> std::int64_t {
         auto const* pu = static_cast<std::uint64_t const*>(static_cast<void const*>(bytes.data()));
         x = cxx::ntoh(*pu);
         if (x > std::numeric_limits<std::int64_t>::max())
@@ -30,10 +30,10 @@ namespace
       });
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(cxx::cbor::byte_view, Sink);
+  cxx::json::byte_view parse(cxx::json::byte_view, Sink);
 
   template <typename Int, typename Sink>
-  cxx::cbor::byte_view parse(Int, cxx::cbor::byte_view bytes, Sink sink)
+  cxx::json::byte_view parse(Int, cxx::json::byte_view bytes, Sink sink)
   {
     if (std::size(bytes) < sizeof(Int))
       throw cxx::cbor::buffer_error("not enough data to decode json");
@@ -43,9 +43,9 @@ namespace
   }
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::positive>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::positive>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
     auto const additional = cxx::codec::cbor::initial(byte)->additional;
@@ -70,9 +70,9 @@ namespace
   }
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::negative>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::negative>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
     return parse(tag<initial_byte::type::positive>, byte, bytes,
@@ -80,9 +80,9 @@ namespace
   }
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::bytes>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::bytes>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
     std::size_t const size = [&] {
@@ -94,18 +94,18 @@ namespace
       bytes = leftovers;
       return n;
     }();
-    sink(cxx::cbor::byte_view(bytes.data(), size));
+    sink(cxx::json::byte_view(bytes.data(), size));
     bytes.remove_prefix(size);
     return bytes;
   }
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::unicode>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::unicode>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
-    return parse(tag<initial_byte::type::bytes>, byte, bytes, [&sink](cxx::cbor::byte_view x) {
+    return parse(tag<initial_byte::type::bytes>, byte, bytes, [&sink](cxx::json::byte_view x) {
       sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
                             std::size(x)));
     });
@@ -132,16 +132,16 @@ namespace
       }
     };
     return cxx::overload(
-        [impl](cxx::cbor::byte_view bytes) {
+        [impl](cxx::json::byte_view bytes) {
           impl(cxx::json::byte_stream(bytes.data(), bytes.data() + std::size(bytes)));
         },
         impl);
   };
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::array>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::array>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
     cxx::json::array::size_type size = 0;
@@ -157,9 +157,9 @@ namespace
   }
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::dictionary>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::dictionary>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
     cxx::json::dictionary::size_type size = 0;
@@ -185,7 +185,7 @@ namespace
   }
 
   template <typename T>
-  auto const floating_point_value = [](cxx::cbor::byte_view& bytes, auto sink) {
+  auto const floating_point_value = [](cxx::json::byte_view& bytes, auto sink) {
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::buffer_error("not enough data to decode floating point value");
     auto const* pd = static_cast<T const*>(static_cast<void const*>(bytes.data()));
@@ -195,9 +195,9 @@ namespace
   };
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(tag_t<initial_byte::type::special>,
+  cxx::json::byte_view parse(tag_t<initial_byte::type::special>,
                              cxx::byte byte,
-                             cxx::cbor::byte_view bytes,
+                             cxx::json::byte_view bytes,
                              Sink sink)
   {
     auto const simple_value = [sink](cxx::byte v) {
@@ -248,7 +248,7 @@ namespace
   }
 
   template <typename Sink>
-  cxx::cbor::byte_view parse(cxx::cbor::byte_view bytes, Sink sink)
+  cxx::json::byte_view parse(cxx::json::byte_view bytes, Sink sink)
   {
     if (bytes.empty()) throw cxx::cbor::buffer_error("not enough data to decode json");
     auto const byte = bytes.front();
@@ -277,11 +277,11 @@ namespace
 
 auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 {
-  byte_view data(stream.data(), std::size(stream));
+  cxx::json::byte_view data(stream.data(), std::size(stream));
   return decode(data);
 }
 
-auto ::cxx::cbor::decode(byte_view& bytes) -> json
+auto ::cxx::cbor::decode(json::byte_view& bytes) -> json
 {
   cxx::json json;
   bytes = parse(bytes, emplace_to(json));
