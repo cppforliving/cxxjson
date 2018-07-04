@@ -161,6 +161,11 @@ TEST_CASE("cbor can decode arrays")
     REQUIRE_THROWS_AS(cbor::decode("81"_hex), cbor::buffer_error);
     REQUIRE_THROWS_AS(cbor::decode("8417181819ffff"_hex), cbor::buffer_error);
   }
+  SECTION("size exceeds limit")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("9a00010000"_hex), cbor::unsupported);
+  }
+
   REQUIRE(cbor::decode("80"_hex) == cxx::json::array());
   SECTION("one item")
   {
@@ -192,6 +197,10 @@ TEST_CASE("cbor can decode dictionaties")
   SECTION("can identify truncation erros")
   {
     REQUIRE_THROWS_AS(cbor::decode("a1"_hex), cbor::buffer_error);
+  }
+  SECTION("size exceeds limit")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("ba00010000"_hex), cbor::unsupported);
   }
   REQUIRE(cbor::decode("a0"_hex) == cxx::json::dictionary());
   SECTION("one item")
@@ -236,6 +245,10 @@ TEST_CASE("cbor can decode simple special values")
 
 TEST_CASE("cbor can decode floating point numbers")
 {
+  SECTION("can identify truncation erros")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::buffer_error);
+  }
   REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
   REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
 }
