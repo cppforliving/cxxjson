@@ -36,7 +36,7 @@ namespace
   cxx::json::byte_view parse(Int, cxx::json::byte_view bytes, Sink sink)
   {
     if (std::size(bytes) < sizeof(Int))
-      throw cxx::cbor::buffer_error("not enough data to decode json");
+      throw cxx::cbor::truncation_error("not enough data to decode json");
     sink(ntohb(Int{}, bytes));
     bytes.remove_prefix(sizeof(Int));
     return bytes;
@@ -90,7 +90,7 @@ namespace
       auto const leftovers = parse(tag<initial_byte::type::positive>, byte, bytes,
                                    [&n](std::int64_t x) { n = static_cast<std::size_t>(x); });
       if (std::size(leftovers) < n)
-        throw cxx::cbor::buffer_error("not enough data to decode byte_stream");
+        throw cxx::cbor::truncation_error("not enough data to decode byte_stream");
       bytes = leftovers;
       return n;
     }();
@@ -172,7 +172,7 @@ namespace
     while (size--)
     {
       if (std::empty(bytes))
-        throw cxx::cbor::buffer_error("not enough data to decode dictionary key");
+        throw cxx::cbor::truncation_error("not enough data to decode dictionary key");
       auto const init = bytes.front();
       bytes.remove_prefix(1);
       std::string_view key;
@@ -187,7 +187,7 @@ namespace
   template <typename T>
   auto const floating_point_value = [](cxx::json::byte_view& bytes, auto sink) {
     if (std::size(bytes) < sizeof(T))
-      throw cxx::cbor::buffer_error("not enough data to decode floating point value");
+      throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     auto const* pd = static_cast<T const*>(static_cast<void const*>(bytes.data()));
     double x = cxx::ntoh(*pd);
     sink(x);
@@ -231,7 +231,7 @@ namespace
         break;
       case initial_byte::value::Simple:
         if (std::empty(bytes))
-          throw cxx::cbor::buffer_error("not enough data to decode simple value");
+          throw cxx::cbor::truncation_error("not enough data to decode simple value");
         simple_value(bytes.at(0));
         bytes.remove_prefix(1);
         break;
@@ -250,7 +250,7 @@ namespace
   template <typename Sink>
   cxx::json::byte_view parse(cxx::json::byte_view bytes, Sink sink)
   {
-    if (bytes.empty()) throw cxx::cbor::buffer_error("not enough data to decode json");
+    if (bytes.empty()) throw cxx::cbor::truncation_error("not enough data to decode json");
     auto const byte = bytes.front();
     bytes.remove_prefix(1);
     switch (cxx::codec::cbor::initial(byte)->major)

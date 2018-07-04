@@ -9,9 +9,9 @@ namespace cxx
       using std::runtime_error::runtime_error;
       virtual ~error() = default;
     };
-    struct buffer_error : virtual error {
+    struct truncation_error : virtual error {
       using error::error;
-      virtual ~buffer_error() = default;
+      virtual ~truncation_error() = default;
     };
     struct unsupported : virtual error {
       using error::error;

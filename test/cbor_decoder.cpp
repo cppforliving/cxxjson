@@ -18,7 +18,7 @@ TEST_CASE("cbor can decode positive integers")
 {
   SECTION("throws exception when empty buffer is passed")
   {
-    REQUIRE_THROWS_AS(cbor::decode(""_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode(""_hex), cbor::truncation_error);
   }
   SECTION("initial byte integer")
   {
@@ -29,25 +29,25 @@ TEST_CASE("cbor can decode positive integers")
   SECTION("single additional byte integer")
   {
     REQUIRE_THROWS_AS(cbor::decode("1c"_hex), cbor::data_error);
-    REQUIRE_THROWS_AS(cbor::decode("18"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("18"_hex), cbor::truncation_error);
     REQUIRE(cbor::decode("1800"_hex) == 0x00);
     REQUIRE(cbor::decode("1818"_hex) == 0x18);
     REQUIRE(cbor::decode("18ff"_hex) == 0xff);
   }
   SECTION("two additional bytes integer")
   {
-    REQUIRE_THROWS_AS(cbor::decode("1900"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("1900"_hex), cbor::truncation_error);
     REQUIRE(cbor::decode("190100"_hex) == 0x0100);
     REQUIRE(cbor::decode("1903e8"_hex) == 0x03e8);
   }
   SECTION("four additional bytes integer")
   {
-    REQUIRE_THROWS_AS(cbor::decode("1a000f42"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("1a000f42"_hex), cbor::truncation_error);
     REQUIRE(cbor::decode("1aeb2f4240"_hex) == 0xeb2f4240);
   }
   SECTION("eight additional bytes integer")
   {
-    REQUIRE_THROWS_AS(cbor::decode("1b00000000000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("1b00000000000000"_hex), cbor::truncation_error);
     REQUIRE(cbor::decode("1b1122334455667788"_hex) == 0x1122334455667788);
   }
   SECTION("decoding with leftovers")
@@ -70,10 +70,10 @@ TEST_CASE("cbor can decode negative integers")
 {
   SECTION("can identify truncation erros")
   {
-    REQUIRE_THROWS_AS(cbor::decode("38"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("3900"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("3a000000"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("3b00000000000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("38"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("3900"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("3a000000"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("3b00000000000000"_hex), cbor::truncation_error);
   }
   REQUIRE(cbor::decode("20"_hex) == -0x01);
   REQUIRE(cbor::decode("37"_hex) == -0x18);
@@ -101,9 +101,9 @@ TEST_CASE("cbor can decode byte_stream")
 {
   SECTION("can identify truncation erros")
   {
-    REQUIRE_THROWS_AS(cbor::decode("41"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("44000000"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("59000200"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("41"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("44000000"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("59000200"_hex), cbor::truncation_error);
   }
   REQUIRE(cbor::decode("40"_hex) == ""_hex);
   REQUIRE(cbor::decode("4100"_hex) == "00"_hex);
@@ -126,9 +126,9 @@ TEST_CASE("cbor can decode unicode")
 {
   SECTION("can identify truncation erros")
   {
-    REQUIRE_THROWS_AS(cbor::decode("61"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("64000000"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("79000200"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("61"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("64000000"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("79000200"_hex), cbor::truncation_error);
   }
   REQUIRE(cbor::decode("60"_hex) == ""s);
   REQUIRE(cbor::decode("6161"_hex) == "a");
@@ -158,8 +158,8 @@ TEST_CASE("cbor can decode arrays")
 {
   SECTION("can identify truncation erros")
   {
-    REQUIRE_THROWS_AS(cbor::decode("81"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("8417181819ffff"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("81"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("8417181819ffff"_hex), cbor::truncation_error);
   }
   SECTION("size exceeds limit")
   {
@@ -196,7 +196,7 @@ TEST_CASE("cbor can decode dictionaties")
 {
   SECTION("can identify truncation erros")
   {
-    REQUIRE_THROWS_AS(cbor::decode("a1"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("a1"_hex), cbor::truncation_error);
   }
   SECTION("size exceeds limit")
   {
@@ -226,7 +226,7 @@ TEST_CASE("cbor can decode dictionaties")
 
 TEST_CASE("cbor can decode simple special values")
 {
-  REQUIRE_THROWS_AS(cbor::decode("f8"_hex), cbor::buffer_error);
+  REQUIRE_THROWS_AS(cbor::decode("f8"_hex), cbor::truncation_error);
   REQUIRE(cbor::decode("f4"_hex) == false);
   REQUIRE(cbor::decode("f8f4"_hex) == false);
   REQUIRE(cbor::decode("f5"_hex) == true);
@@ -247,8 +247,8 @@ TEST_CASE("cbor can decode floating point numbers")
 {
   SECTION("can identify truncation erros")
   {
-    REQUIRE_THROWS_AS(cbor::decode("fa000000"_hex), cbor::buffer_error);
-    REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("fa000000"_hex), cbor::truncation_error);
+    REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::truncation_error);
   }
   SECTION("half precision floating point numbers are not supported")
   {
