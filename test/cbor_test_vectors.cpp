@@ -143,4 +143,14 @@ TEST_CASE("official cbor test vectors decoding")
   REQUIRE(cbor::decode("a56161614161626142616361436164614461656145"_hex) ==
           cxx::json::dictionary({{"a", "A"}, {"b", "B"}, {"c", "C"}, {"d", "D"}, {"e", "E"}}));
   REQUIRE_THROWS_AS(cbor::decode("5f42010243030405ff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("7f657374726561646d696e67ff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("9fff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("9f018202039f0405ffff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("9f01820203820405ff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("83018202039f0405ff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"_hex),
+                    cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("bf61610161629f0203ffff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("826161bf61626163ff"_hex), cbor::unsupported);
+  REQUIRE_THROWS_AS(cbor::decode("bf6346756ef563416d7421ff"_hex), cbor::unsupported);
 }
