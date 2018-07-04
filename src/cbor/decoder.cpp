@@ -207,7 +207,12 @@ namespace
           throw cxx::cbor::unsupported("decoding given type is not yet supported");
       }
     };
-    auto const floating_value = [sink](cxx::cbor::byte_view b) {
+    auto const float_value = [sink](cxx::cbor::byte_view b) {
+      auto const* pd = static_cast<float const*>(static_cast<void const*>(b.data()));
+      double x = cxx::ntohf(*pd);
+      sink(x);
+    };
+    auto const double_value = [sink](cxx::cbor::byte_view b) {
       auto const* pd = static_cast<double const*>(static_cast<void const*>(b.data()));
       sink(cxx::ntohd(*pd));
     };
@@ -229,10 +234,16 @@ namespace
         simple_value(bytes.at(0));
         bytes.remove_prefix(1);
         break;
+      case initial_byte::value::ieee_754_single:
+        if (std::size(bytes) < sizeof(float))
+          throw cxx::cbor::buffer_error("not enough data to decode float");
+        float_value(bytes);
+        bytes.remove_prefix(sizeof(float));
+        break;
       case initial_byte::value::ieee_754_double:
         if (std::size(bytes) < sizeof(double))
           throw cxx::cbor::buffer_error("not enough data to decode double");
-        floating_value(bytes);
+        double_value(bytes);
         bytes.remove_prefix(sizeof(double));
         break;
       default:

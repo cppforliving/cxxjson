@@ -247,8 +247,11 @@ TEST_CASE("cbor can decode floating point numbers")
 {
   SECTION("can identify truncation erros")
   {
+    REQUIRE_THROWS_AS(cbor::decode("fa000000"_hex), cbor::buffer_error);
     REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::buffer_error);
   }
+  REQUIRE(cbor::decode("fa47c35000"_hex) == 100000.0);
   REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
   REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
+  REQUIRE(cbor::decode("fb3ff199999999999a"_hex) == 1.1);
 }

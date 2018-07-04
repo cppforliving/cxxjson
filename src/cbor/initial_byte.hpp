@@ -23,6 +23,14 @@ namespace cxx
     return d;
   };
 
+  auto const ntohf = [](float f) -> float {
+    static_assert(sizeof(float) == sizeof(std::uint32_t));
+    static_assert(alignof(float) == alignof(std::uint32_t));
+    auto* pu = static_cast<std::uint32_t*>(static_cast<void*>(&f));
+    *pu = ntohl(*pu);
+    return f;
+  };
+
   auto const ntohd = [](double d) -> double {
     static_assert(sizeof(double) == sizeof(std::uint64_t));
     static_assert(alignof(double) == alignof(std::uint64_t));
@@ -69,6 +77,7 @@ namespace cxx::codec::cbor
       static inline constexpr base_type<cxx::byte> True = 0xf5;
       static inline constexpr base_type<cxx::byte> Null = 0xf6;
       static inline constexpr base_type<cxx::byte> Simple = 0xf8;
+      static inline constexpr base_type<cxx::byte> ieee_754_single = 0xfa;
       static inline constexpr base_type<cxx::byte> ieee_754_double = 0xfb;
     };
 
