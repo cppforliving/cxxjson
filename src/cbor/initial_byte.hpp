@@ -60,14 +60,15 @@ namespace cxx::codec::cbor
     };
     struct value {
       static inline constexpr base_type<cxx::byte> max_insitu = 23;
-      // static inline constexpr base_type<cxx::byte> one_byte = 24;
-      // static inline constexpr base_type<cxx::byte> two_bytes = 25;
-      // static inline constexpr base_type<cxx::byte> four_bytes = 26;
+      static inline constexpr base_type<cxx::byte> one_byte = 24;
+      static inline constexpr base_type<cxx::byte> two_bytes = 25;
+      static inline constexpr base_type<cxx::byte> four_bytes = 26;
       static inline constexpr base_type<cxx::byte> eigth_bytes = 27;
 
       static inline constexpr base_type<cxx::byte> False = 0xf4;
       static inline constexpr base_type<cxx::byte> True = 0xf5;
       static inline constexpr base_type<cxx::byte> Null = 0xf6;
+      static inline constexpr base_type<cxx::byte> Simple = 0xf8;
       static inline constexpr base_type<cxx::byte> ieee_754_double = 0xfb;
     };
 

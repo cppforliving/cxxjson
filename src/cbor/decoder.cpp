@@ -49,41 +49,20 @@ namespace
                              Sink sink)
   {
     auto const additional = cxx::codec::cbor::initial(byte)->additional;
+    if (additional <= initial_byte::value::max_insitu)
+    {
+      sink(static_cast<std::int64_t>(additional));
+      return bytes;
+    }
     switch (additional)
     {
-      case 0x00:
-      case 0x01:
-      case 0x02:
-      case 0x03:
-      case 0x04:
-      case 0x05:
-      case 0x06:
-      case 0x07:
-      case 0x08:
-      case 0x09:
-      case 0x0a:
-      case 0x0b:
-      case 0x0c:
-      case 0x0d:
-      case 0x0e:
-      case 0x0f:
-      case 0x10:
-      case 0x11:
-      case 0x12:
-      case 0x13:
-      case 0x14:
-      case 0x15:
-      case 0x16:
-      case 0x17:
-        sink(static_cast<std::int64_t>(additional));
-        return bytes;
-      case 0x18:
+      case initial_byte::value::one_byte:
         return parse(std::uint8_t{0}, bytes, sink);
-      case 0x19:
+      case initial_byte::value::two_bytes:
         return parse(std::uint16_t{0}, bytes, sink);
-      case 0x1a:
+      case initial_byte::value::four_bytes:
         return parse(std::uint32_t{0}, bytes, sink);
-      case 0x1b:
+      case initial_byte::value::eigth_bytes:
         return parse(std::uint64_t{0}, bytes, sink);
       default:
         throw cxx::cbor::data_error("meaningless additional data in initial byte");
@@ -244,7 +223,7 @@ namespace
       case initial_byte::value::Null:
         sink(cxx::json::null);
         break;
-      case 0xf8:
+      case initial_byte::value::Simple:
         if (std::empty(bytes))
           throw cxx::cbor::buffer_error("not enough data to decode simple value");
         simple_value(bytes.at(0));
