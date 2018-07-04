@@ -60,3 +60,10 @@ static void cxx_cbor_decode_null(benchmark::State& state)
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
 }
 BENCHMARK(cxx_cbor_decode_null);
+
+static void cxx_cbor_decode_double(benchmark::State& state)
+{
+  auto const bytes = cxx::cbor::encode(3.14);
+  for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::decode(bytes));
+}
+BENCHMARK(cxx_cbor_decode_double);
