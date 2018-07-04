@@ -87,3 +87,12 @@ TEST_CASE("cbor transcoding of simple special values")
   assert_transcoding(true);
   assert_transcoding(cxx::json::null);
 }
+
+TEST_CASE("cbor transcoding of floating point numbers")
+{
+  auto const assert_transcoding = [](auto const& x) {
+    REQUIRE(cbor::decode(cbor::encode(x)) == x);
+  };
+  assert_transcoding(0.0);
+  assert_transcoding(3.14);
+}

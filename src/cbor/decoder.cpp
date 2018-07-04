@@ -1,5 +1,6 @@
 #include "inc/cxx/cbor.hpp"
 #include "src/cbor/initial_byte.hpp"
+#include <algorithm>
 #include <arpa/inet.h>
 
 namespace
@@ -10,21 +11,19 @@ namespace
   template <cxx::codec::cbor::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
 
-  constexpr auto const ntoh = cxx::overload(
+  constexpr auto const ntohb = cxx::overload(
       [](std::uint8_t, cxx::cbor::byte_view bytes) -> std::int64_t {
         return static_cast<std::int64_t>(bytes.front());
       },
       [](std::uint16_t, cxx::cbor::byte_view bytes) -> std::int64_t {
-        return ntohs(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
+        return cxx::ntoh(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
       },
       [](std::uint32_t, cxx::cbor::byte_view bytes) -> std::int64_t {
-        return ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
+        return cxx::ntoh(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
       },
       [](std::uint64_t x, cxx::cbor::byte_view bytes) -> std::int64_t {
-        x = (static_cast<std::uint64_t>(
-                 ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data())))
-             << 32) |
-            ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data() + sizeof(std::uint32_t)));
+        auto const* pu = static_cast<std::uint64_t const*>(static_cast<void const*>(bytes.data()));
+        x = cxx::ntoh(*pu);
         if (x > std::numeric_limits<std::int64_t>::max())
           throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
         return static_cast<std::int64_t>(x);
@@ -38,7 +37,7 @@ namespace
   {
     if (std::size(bytes) < sizeof(Int))
       throw cxx::cbor::buffer_error("not enough data to decode json");
-    sink(ntoh(Int{}, bytes));
+    sink(ntohb(Int{}, bytes));
     bytes.remove_prefix(sizeof(Int));
     return bytes;
   }
@@ -50,41 +49,20 @@ namespace
                              Sink sink)
   {
     auto const additional = cxx::codec::cbor::initial(byte)->additional;
+    if (additional <= initial_byte::value::max_insitu)
+    {
+      sink(static_cast<std::int64_t>(additional));
+      return bytes;
+    }
     switch (additional)
     {
-      case 0x00:
-      case 0x01:
-      case 0x02:
-      case 0x03:
-      case 0x04:
-      case 0x05:
-      case 0x06:
-      case 0x07:
-      case 0x08:
-      case 0x09:
-      case 0x0a:
-      case 0x0b:
-      case 0x0c:
-      case 0x0d:
-      case 0x0e:
-      case 0x0f:
-      case 0x10:
-      case 0x11:
-      case 0x12:
-      case 0x13:
-      case 0x14:
-      case 0x15:
-      case 0x16:
-      case 0x17:
-        sink(static_cast<std::int64_t>(additional));
-        return bytes;
-      case 0x18:
+      case initial_byte::value::one_byte:
         return parse(std::uint8_t{0}, bytes, sink);
-      case 0x19:
+      case initial_byte::value::two_bytes:
         return parse(std::uint16_t{0}, bytes, sink);
-      case 0x1a:
+      case initial_byte::value::four_bytes:
         return parse(std::uint32_t{0}, bytes, sink);
-      case 0x1b:
+      case initial_byte::value::eigth_bytes:
         return parse(std::uint64_t{0}, bytes, sink);
       default:
         throw cxx::cbor::data_error("meaningless additional data in initial byte");
@@ -133,39 +111,32 @@ namespace
     });
   }
 
-  auto const emplace_to = cxx::overload(
-      [](cxx::json::array& array) {
-        return cxx::overload(
-            [&array](std::int64_t x) { array.emplace_back(x); },
-            [&array](cxx::cbor::byte_view x) {
-              array.emplace_back(cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
-            },
-            [&array](std::string_view x) { array.emplace_back(x); },
-            [&array](cxx::json::array x) { array.emplace_back(std::move(x)); },
-            [&array](cxx::json::dictionary x) { array.emplace_back(std::move(x)); },
-            [&array](bool x) { array.emplace_back(x); },
-            [&array](cxx::json::null_t x) { array.emplace_back(x); },
-            [](auto const&) {
-              throw cxx::cbor::unsupported("decoding given type is not yet supported");
-            });
-      },
-      [](cxx::json::dictionary& dict, std::string_view key) {
-        using key_t = cxx::json::dictionary::key_type;
-        return cxx::overload(
-            [&dict, key](std::int64_t x) { dict.try_emplace(key_t(key), x); },
-            [&dict, key](cxx::cbor::byte_view x) {
-              dict.try_emplace(key_t(key),
-                               cxx::json::byte_stream(x.data(), x.data() + std::size(x)));
-            },
-            [&dict, key](std::string_view x) { dict.try_emplace(key_t(key), x); },
-            [&dict, key](cxx::json::array x) { dict.try_emplace(key_t(key), std::move(x)); },
-            [&dict, key](cxx::json::dictionary x) { dict.try_emplace(key_t(key), std::move(x)); },
-            [&dict, key](bool x) { dict.try_emplace(key_t(key), x); },
-            [&dict, key](cxx::json::null_t x) { dict.try_emplace(key_t(key), x); },
-            [](auto const&) {
-              throw cxx::cbor::unsupported("decoding given type is not yet supported");
-            });
-      });
+  auto const emplace_to = [](auto& target, std::string_view key = std::string_view()) {
+    using target_t = std::decay_t<decltype(target)>;
+    using key_t = cxx::json::dictionary::key_type;
+    auto impl = [&target, key](auto&& x) {
+      (void)key;
+      if constexpr (std::is_same_v<target_t, cxx::json::array>)
+      { target.emplace_back(std::forward<decltype(x)>(x)); }
+      else if constexpr (std::is_same_v<target_t, cxx::json::dictionary>)
+      {
+        target.try_emplace(key_t(key), std::forward<decltype(x)>(x));
+      }
+      else if constexpr (std::is_same_v<target_t, cxx::json>)
+      {
+        target = std::forward<decltype(x)>(x);
+      }
+      else
+      {
+        throw 1;
+      }
+    };
+    return cxx::overload(
+        [impl](cxx::cbor::byte_view bytes) {
+          impl(cxx::json::byte_stream(bytes.data(), bytes.data() + std::size(bytes)));
+        },
+        impl);
+  };
 
   template <typename Sink>
   cxx::cbor::byte_view parse(tag_t<initial_byte::type::array>,
@@ -176,7 +147,8 @@ namespace
     cxx::json::array::size_type size = 0;
     bytes = parse(tag<initial_byte::type::positive>, byte, bytes,
                   [&size](std::int64_t x) { size = static_cast<cxx::json::array::size_type>(x); });
-    // if(size > safety_check) throw an error
+    if (size > cxx::cbor::max_size)
+      throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
     cxx::json::array array;
     array.reserve(size);
     while (size--) bytes = parse(bytes, emplace_to(array));
@@ -194,7 +166,8 @@ namespace
     bytes = parse(tag<initial_byte::type::positive>, byte, bytes, [&size](std::int64_t x) {
       size = static_cast<cxx::json::dictionary::size_type>(x);
     });
-    // if(size > safety_check) throw an error
+    if (size > cxx::cbor::max_size)
+      throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
     cxx::json::dictionary dict;
     while (size--)
     {
@@ -211,23 +184,62 @@ namespace
     return bytes;
   }
 
+  template <typename T>
+  auto const floating_point_value = [](cxx::cbor::byte_view& bytes, auto sink) {
+    if (std::size(bytes) < sizeof(T))
+      throw cxx::cbor::buffer_error("not enough data to decode floating point value");
+    auto const* pd = static_cast<T const*>(static_cast<void const*>(bytes.data()));
+    double x = cxx::ntoh(*pd);
+    sink(x);
+    bytes.remove_prefix(sizeof(T));
+  };
+
   template <typename Sink>
   cxx::cbor::byte_view parse(tag_t<initial_byte::type::special>,
                              cxx::byte byte,
                              cxx::cbor::byte_view bytes,
                              Sink sink)
   {
-    auto const additional = cxx::codec::cbor::initial(byte)->additional;
-    switch (additional)
+    auto const simple_value = [sink](cxx::byte v) {
+      auto const x = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(v);
+      switch (x)
+      {
+        case initial_byte::value::False:
+          sink(false);
+          break;
+        case initial_byte::value::True:
+          sink(true);
+          break;
+        case initial_byte::value::Null:
+          sink(cxx::json::null);
+          break;
+        default:
+          throw cxx::cbor::unsupported("decoding given type is not yet supported");
+      }
+    };
+    auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
+    switch (value)
     {
-      case 0x1f & initial_byte::value::False:
+      case initial_byte::value::False:
         sink(false);
         break;
-      case 0x1f & initial_byte::value::True:
+      case initial_byte::value::True:
         sink(true);
         break;
-      case 0x1f & initial_byte::value::Null:
+      case initial_byte::value::Null:
         sink(cxx::json::null);
+        break;
+      case initial_byte::value::Simple:
+        if (std::empty(bytes))
+          throw cxx::cbor::buffer_error("not enough data to decode simple value");
+        simple_value(bytes.at(0));
+        bytes.remove_prefix(1);
+        break;
+      case initial_byte::value::ieee_754_single:
+        floating_point_value<float>(bytes, sink);
+        break;
+      case initial_byte::value::ieee_754_double:
+        floating_point_value<double>(bytes, sink);
         break;
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
@@ -272,18 +284,6 @@ auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 auto ::cxx::cbor::decode(byte_view& bytes) -> json
 {
   cxx::json json;
-  auto sink =
-      cxx::overload([&json](std::int64_t x) { json = x; },
-                    [&json](cxx::cbor::byte_view x) {
-                      json = cxx::json::byte_stream(x.data(), x.data() + std::size(x));
-                    },
-                    [&json](std::string_view x) { json = x; },
-                    [&json](cxx::json::array x) { json = std::move(x); },
-                    [&json](cxx::json::dictionary x) { json = std::move(x); },
-                    [&json](bool x) { json = x; }, [&json](cxx::json::null_t x) { json = x; },
-                    [](auto const&) {
-                      throw cxx::cbor::unsupported("decoding given type is not yet supported");
-                    });
-  bytes = parse(bytes, sink);
+  bytes = parse(bytes, emplace_to(json));
   return json;
 }

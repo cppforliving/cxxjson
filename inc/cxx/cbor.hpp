@@ -21,6 +21,7 @@ namespace cxx
       using error::error;
       virtual ~data_error() = default;
     };
+    static constexpr std::size_t const max_size = 0xffff;
     using byte_view = std::basic_string_view<json::byte_stream::value_type>;
     static json::byte_stream encode(json const&) noexcept;
     static json decode(json::byte_stream const&);

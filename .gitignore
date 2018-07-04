@@ -5,4 +5,5 @@
 .waf*
 build
 core
+crash-*
 logs

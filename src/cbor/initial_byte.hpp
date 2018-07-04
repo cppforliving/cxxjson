@@ -1,5 +1,50 @@
 #pragma once
 #include "inc/cxx/json.hpp"
+#include <arpa/inet.h>
+
+namespace cxx
+{
+  auto const htonll = [](std::uint64_t x) -> std::uint64_t {
+    return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
+           htonl(static_cast<std::uint32_t>(x >> 32));
+  };
+
+  auto const ntohll = [](std::uint64_t x) -> std::uint64_t {
+    auto const hi = static_cast<std::uint32_t>(x >> 32);
+    auto const lo = static_cast<std::uint32_t>(x & 0xffffffff);
+    return (static_cast<std::uint64_t>(ntohl(lo)) << 32) | ntohl(hi);
+  };
+
+  auto const htond = [](double d) -> double {
+    static_assert(sizeof(double) == sizeof(std::uint64_t));
+    static_assert(alignof(double) == alignof(std::uint64_t));
+    auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
+    *pu = htonll(*pu);
+    return d;
+  };
+
+  auto const ntohf = [](float f) -> float {
+    static_assert(sizeof(float) == sizeof(std::uint32_t));
+    static_assert(alignof(float) == alignof(std::uint32_t));
+    auto* pu = static_cast<std::uint32_t*>(static_cast<void*>(&f));
+    *pu = ntohl(*pu);
+    return f;
+  };
+
+  auto const ntohd = [](double d) -> double {
+    static_assert(sizeof(double) == sizeof(std::uint64_t));
+    static_assert(alignof(double) == alignof(std::uint64_t));
+    auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
+    *pu = ntohll(*pu);
+    return d;
+  };
+
+  auto const ntoh = cxx::overload([](std::uint16_t x) -> std::uint16_t { return ntohs(x); },
+                                  [](std::uint32_t x) -> std::uint32_t { return ntohl(x); },
+                                  [](std::uint64_t x) -> std::uint64_t { return ntohll(x); },
+                                  [](float x) -> float { return ntohf(x); },
+                                  [](double x) -> double { return ntohd(x); });
+} // namespace cxx
 
 namespace cxx::codec::cbor
 {
@@ -29,14 +74,16 @@ namespace cxx::codec::cbor
     };
     struct value {
       static inline constexpr base_type<cxx::byte> max_insitu = 23;
-      // static inline constexpr base_type<cxx::byte> one_byte = 24;
-      // static inline constexpr base_type<cxx::byte> two_bytes = 25;
-      // static inline constexpr base_type<cxx::byte> four_bytes = 26;
+      static inline constexpr base_type<cxx::byte> one_byte = 24;
+      static inline constexpr base_type<cxx::byte> two_bytes = 25;
+      static inline constexpr base_type<cxx::byte> four_bytes = 26;
       static inline constexpr base_type<cxx::byte> eigth_bytes = 27;
 
       static inline constexpr base_type<cxx::byte> False = 0xf4;
       static inline constexpr base_type<cxx::byte> True = 0xf5;
       static inline constexpr base_type<cxx::byte> Null = 0xf6;
+      static inline constexpr base_type<cxx::byte> Simple = 0xf8;
+      static inline constexpr base_type<cxx::byte> ieee_754_single = 0xfa;
       static inline constexpr base_type<cxx::byte> ieee_754_double = 0xfb;
     };
 

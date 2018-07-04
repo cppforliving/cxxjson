@@ -7,12 +7,6 @@ namespace
 {
   auto const sum = [](auto const&... x) -> decltype(auto) { return (x + ...); };
 
-  std::uint64_t htonll(std::uint64_t x) noexcept
-  {
-    return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
-           htonl(static_cast<std::uint32_t>(x >> 32));
-  }
-
   auto const available = [](cxx::json::byte_stream const& stream) {
     return stream.capacity() - std::size(stream);
   };
@@ -52,7 +46,7 @@ namespace detail
         reinterpret_cast<std::uint32_t&>(*it) = htonl(static_cast<std::uint32_t>(0xffffffff & x));
         break;
       case 3:
-        reinterpret_cast<std::uint64_t&>(*it) = htonll(x);
+        reinterpret_cast<std::uint64_t&>(*it) = cxx::htonll(x);
         break;
     }
     return *(--it);
@@ -123,10 +117,10 @@ namespace detail
   void encode(double d, cxx::json::byte_stream& stream) noexcept
   {
     assure(stream, sizeof(double) + 1);
+    d = cxx::htond(d);
+    auto const* first = static_cast<cxx::byte const*>(static_cast<void const*>(&d));
     stream.emplace_back(cxx::byte(::cxx::codec::cbor::initial_byte::value::ieee_754_double));
-    auto dest = stream.insert(std::end(stream), sizeof(double), cxx::byte());
-    auto const* first = reinterpret_cast<cxx::byte const*>(&d);
-    std::reverse_copy(first, first + sizeof(double), dest);
+    stream.insert(std::end(stream), first, first + sizeof(double));
   }
 
   void encode(cxx::json const& json, cxx::json::byte_stream& stream) noexcept

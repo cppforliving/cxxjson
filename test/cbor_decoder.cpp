@@ -161,6 +161,11 @@ TEST_CASE("cbor can decode arrays")
     REQUIRE_THROWS_AS(cbor::decode("81"_hex), cbor::buffer_error);
     REQUIRE_THROWS_AS(cbor::decode("8417181819ffff"_hex), cbor::buffer_error);
   }
+  SECTION("size exceeds limit")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("9a00010000"_hex), cbor::unsupported);
+  }
+
   REQUIRE(cbor::decode("80"_hex) == cxx::json::array());
   SECTION("one item")
   {
@@ -193,6 +198,10 @@ TEST_CASE("cbor can decode dictionaties")
   {
     REQUIRE_THROWS_AS(cbor::decode("a1"_hex), cbor::buffer_error);
   }
+  SECTION("size exceeds limit")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("ba00010000"_hex), cbor::unsupported);
+  }
   REQUIRE(cbor::decode("a0"_hex) == cxx::json::dictionary());
   SECTION("one item")
   {
@@ -217,15 +226,36 @@ TEST_CASE("cbor can decode dictionaties")
 
 TEST_CASE("cbor can decode simple special values")
 {
+  REQUIRE_THROWS_AS(cbor::decode("f8"_hex), cbor::buffer_error);
   REQUIRE(cbor::decode("f4"_hex) == false);
+  REQUIRE(cbor::decode("f8f4"_hex) == false);
   REQUIRE(cbor::decode("f5"_hex) == true);
+  REQUIRE(cbor::decode("f8f5"_hex) == true);
   REQUIRE(cbor::decode("f6"_hex) == cxx::json::null);
+  REQUIRE(cbor::decode("f8f6"_hex) == cxx::json::null);
   SECTION("decoding with leftovers")
   {
-    auto const bytes = "f4f5f6"_hex;
+    auto const bytes = "f4f8f5f6"_hex;
     cbor::byte_view leftovers(bytes.data(), std::size(bytes));
     REQUIRE(cbor::decode(leftovers) == false);
     REQUIRE(cbor::decode(leftovers) == true);
     REQUIRE(cbor::decode(leftovers) == cxx::json::null);
   }
+}
+
+TEST_CASE("cbor can decode floating point numbers")
+{
+  SECTION("can identify truncation erros")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("fa000000"_hex), cbor::buffer_error);
+    REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::buffer_error);
+  }
+  SECTION("half precision floating point numbers are not supported")
+  {
+    REQUIRE_THROWS_AS(cbor::decode("f97bff"_hex), cbor::unsupported);
+  }
+  REQUIRE(cbor::decode("fa47c35000"_hex) == 100000.0);
+  REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
+  REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
+  REQUIRE(cbor::decode("fb3ff199999999999a"_hex) == 1.1);
 }
