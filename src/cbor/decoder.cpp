@@ -11,19 +11,19 @@ namespace
   template <cxx::codec::cbor::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
 
-  constexpr auto const ntoh = cxx::overload(
+  constexpr auto const ntohb = cxx::overload(
       [](std::uint8_t, cxx::cbor::byte_view bytes) -> std::int64_t {
         return static_cast<std::int64_t>(bytes.front());
       },
       [](std::uint16_t, cxx::cbor::byte_view bytes) -> std::int64_t {
-        return ntohs(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
+        return cxx::ntoh(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
       },
       [](std::uint32_t, cxx::cbor::byte_view bytes) -> std::int64_t {
-        return ntohl(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
+        return cxx::ntoh(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
       },
       [](std::uint64_t x, cxx::cbor::byte_view bytes) -> std::int64_t {
         auto const* pu = static_cast<std::uint64_t const*>(static_cast<void const*>(bytes.data()));
-        x = cxx::ntohll(*pu);
+        x = cxx::ntoh(*pu);
         if (x > std::numeric_limits<std::int64_t>::max())
           throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
         return static_cast<std::int64_t>(x);
@@ -37,7 +37,7 @@ namespace
   {
     if (std::size(bytes) < sizeof(Int))
       throw cxx::cbor::buffer_error("not enough data to decode json");
-    sink(ntoh(Int{}, bytes));
+    sink(ntohb(Int{}, bytes));
     bytes.remove_prefix(sizeof(Int));
     return bytes;
   }
@@ -184,6 +184,16 @@ namespace
     return bytes;
   }
 
+  template <typename T>
+  auto const floating_point_value = [](cxx::cbor::byte_view& bytes, auto sink) {
+    if (std::size(bytes) < sizeof(T))
+      throw cxx::cbor::buffer_error("not enough data to decode floating point value");
+    auto const* pd = static_cast<T const*>(static_cast<void const*>(bytes.data()));
+    double x = cxx::ntoh(*pd);
+    sink(x);
+    bytes.remove_prefix(sizeof(T));
+  };
+
   template <typename Sink>
   cxx::cbor::byte_view parse(tag_t<initial_byte::type::special>,
                              cxx::byte byte,
@@ -207,15 +217,6 @@ namespace
           throw cxx::cbor::unsupported("decoding given type is not yet supported");
       }
     };
-    auto const float_value = [sink](cxx::cbor::byte_view b) {
-      auto const* pd = static_cast<float const*>(static_cast<void const*>(b.data()));
-      double x = cxx::ntohf(*pd);
-      sink(x);
-    };
-    auto const double_value = [sink](cxx::cbor::byte_view b) {
-      auto const* pd = static_cast<double const*>(static_cast<void const*>(b.data()));
-      sink(cxx::ntohd(*pd));
-    };
     auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
     switch (value)
     {
@@ -235,16 +236,10 @@ namespace
         bytes.remove_prefix(1);
         break;
       case initial_byte::value::ieee_754_single:
-        if (std::size(bytes) < sizeof(float))
-          throw cxx::cbor::buffer_error("not enough data to decode float");
-        float_value(bytes);
-        bytes.remove_prefix(sizeof(float));
+        floating_point_value<float>(bytes, sink);
         break;
       case initial_byte::value::ieee_754_double:
-        if (std::size(bytes) < sizeof(double))
-          throw cxx::cbor::buffer_error("not enough data to decode double");
-        double_value(bytes);
-        bytes.remove_prefix(sizeof(double));
+        floating_point_value<double>(bytes, sink);
         break;
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
