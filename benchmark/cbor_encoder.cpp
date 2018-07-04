@@ -8,9 +8,7 @@ template <typename T>
 static void cxx_cbor_encode(benchmark::State& state)
 {
   T const t{};
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(cxx::cbor::encode(t));
-  }
+  for (auto _ : state) { benchmark::DoNotOptimize(cxx::cbor::encode(t)); }
 }
 
 template <std::int64_t N>
@@ -23,7 +21,7 @@ BENCHMARK_TEMPLATE(cxx_cbor_encode, double);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, std::string);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::byte_stream);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::array);
-BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::document);
+BENCHMARK_TEMPLATE(cxx_cbor_encode, cxx::json::dictionary);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x0>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x2>);
 BENCHMARK_TEMPLATE(cxx_cbor_encode, Int<0x8>);
@@ -68,7 +66,7 @@ static void cxx_cbor_encode_non_empty_array(benchmark::State& state)
 }
 BENCHMARK(cxx_cbor_encode_non_empty_array);
 
-static void cxx_cbor_encode_non_empty_document(benchmark::State& state)
+static void cxx_cbor_encode_non_empty_dictionary(benchmark::State& state)
 {
   cxx::json const json = {
       // clang-format off
@@ -80,7 +78,7 @@ static void cxx_cbor_encode_non_empty_document(benchmark::State& state)
   };
   for (auto _ : state) benchmark::DoNotOptimize(cxx::cbor::encode(json));
 }
-BENCHMARK(cxx_cbor_encode_non_empty_document);
+BENCHMARK(cxx_cbor_encode_non_empty_dictionary);
 
 static void cxx_cbor_encode_small_string(benchmark::State& state)
 {

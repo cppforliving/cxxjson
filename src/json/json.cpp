@@ -12,10 +12,11 @@
 
 ::cxx::json::json(std::initializer_list<std::pair<json::key const, json>> init) : json()
 {
-  auto& doc = cxx::get<cxx::json::document>(*this);
-  for (auto & [ k, v ] : init) {
-    doc.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
-                std::forward_as_tuple(std::move(v)));
+  auto& dict = cxx::get<cxx::json::dictionary>(*this);
+  for (auto& [k, v] : init)
+  {
+    dict.emplace(std::piecewise_construct, std::forward_as_tuple(k.ptr, k.size),
+                 std::forward_as_tuple(std::move(v)));
   }
 }
 
@@ -36,12 +37,12 @@ auto ::cxx::json::operator=(std::initializer_list<std::pair<json::key const, jso
 
 auto ::cxx::json::operator[](std::string const& k) -> json&
 {
-  return cxx::get<cxx::json::document>(*this)[k];
+  return cxx::get<cxx::json::dictionary>(*this)[k];
 }
 
 auto ::cxx::json::operator[](std::string const& k) const -> json const&
 {
-  return cxx::get<cxx::json::document>(*this).at(k);
+  return cxx::get<cxx::json::dictionary>(*this).at(k);
 }
 
 auto ::cxx::json::operator[](std::size_t k) -> json&
@@ -56,14 +57,13 @@ auto ::cxx::json::operator[](std::size_t k) const -> json const&
 
 auto ::cxx::json::size() const noexcept -> std::size_t
 {
-  auto const func =
-      cxx::overload([](cxx::json::null_t) -> std::size_t { return 0; },
-                    [](auto const& x) -> std::size_t {
-                      if
-                        constexpr(traits::has_size_v<decltype(x)>) return std::size(x);
-                      else
-                        return 1;
-                    });
+  auto const func = cxx::overload([](cxx::json::null_t) -> std::size_t { return 0; },
+                                  [](auto const& x) -> std::size_t {
+                                    if constexpr (traits::has_size_v<decltype(x)>)
+                                      return std::size(x);
+                                    else
+                                      return 1;
+                                  });
   return cxx::visit(func, *this);
 }
 

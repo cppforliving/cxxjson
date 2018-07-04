@@ -159,11 +159,11 @@ TEST_CASE("can nothrow assign cxx::json::array rvalue to cxx::json")
   REQUIRE(json == array);
 }
 
-TEST_CASE("can assign cxx::json::document to cxx::json")
+TEST_CASE("can assign cxx::json::dictionary to cxx::json")
 {
-  static_assert(std::is_assignable_v<cxx::json, cxx::json::document>);
+  static_assert(std::is_assignable_v<cxx::json, cxx::json::dictionary>);
   cxx::json json = 42;
-  cxx::json::document const doc = {
+  cxx::json::dictionary const dict = {
       // clang-format off
       {"lorem", 42},
       {"ipsum", cxx::json::null},
@@ -171,20 +171,20 @@ TEST_CASE("can assign cxx::json::document to cxx::json")
       {"amet", true}
       // clang-format on
   };
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::document>(json));
-  REQUIRE(json != doc);
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::dictionary>(json));
+  REQUIRE(json != dict);
 
-  json = doc;
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
-  REQUIRE(json == doc);
+  json = dict;
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
+  REQUIRE(json == dict);
 }
 
-TEST_CASE("can nothrow assign cxx::json::document rvalue to cxx::json")
+TEST_CASE("can nothrow assign cxx::json::dictionary rvalue to cxx::json")
 {
-  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::document&&>);
+  static_assert(std::is_nothrow_assignable_v<cxx::json, cxx::json::dictionary&&>);
   cxx::json json = 42;
 
-  cxx::json::document const doc = {
+  cxx::json::dictionary const dict = {
       // clang-format off
       {"lorem", 42},
       {"ipsum", cxx::json::null},
@@ -192,21 +192,21 @@ TEST_CASE("can nothrow assign cxx::json::document rvalue to cxx::json")
       {"amet", true}
       // clang-format on
   };
-  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::document>(json));
-  REQUIRE(json != doc);
+  REQUIRE_FALSE(cxx::holds_alternative<cxx::json::dictionary>(json));
+  REQUIRE(json != dict);
 
-  cxx::json::document copy = doc;
+  cxx::json::dictionary copy = dict;
   json = std::move(copy);
 
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
-  REQUIRE(json == doc);
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
+  REQUIRE(json == dict);
 }
 
 TEST_CASE("can assign std::initializer_list<cxx::json> to cxx::json")
 {
   static_assert(std::is_assignable_v<cxx::json, std::initializer_list<cxx::json>>);
   cxx::json json;
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
 
   json = {42, true, cxx::json::null, 3.14};
   REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
@@ -226,11 +226,11 @@ TEST_CASE("can assign std::initializer_list<cxx::byte> to cxx::json")
   REQUIRE(std::size(json) == 4);
 }
 
-TEST_CASE("can assign std::initializer_list<cxx::json::document::value_type> to cxx::json")
+TEST_CASE("can assign std::initializer_list<cxx::json::dictionary::value_type> to cxx::json")
 {
   using namespace cxx::literals;
   static_assert(
-      std::is_assignable_v<cxx::json, std::initializer_list<cxx::json::document::value_type>>);
+      std::is_assignable_v<cxx::json, std::initializer_list<cxx::json::dictionary::value_type>>);
   cxx::json json = 42;
   REQUIRE(cxx::holds_alternative<std::int64_t>(json));
   json = {
@@ -242,8 +242,8 @@ TEST_CASE("can assign std::initializer_list<cxx::json::document::value_type> to 
       {"consectetur"_key, true}
       // clang-format on
   };
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
-  cxx::json::document const document = {
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
+  cxx::json::dictionary const dictionary = {
       // clang-format off
       {"lorem", 42},
       {"ipsum", "dolor"},
@@ -253,6 +253,6 @@ TEST_CASE("can assign std::initializer_list<cxx::json::document::value_type> to 
       // clang-format on
   };
 
-  REQUIRE(std::size(json) == std::size(document));
-  REQUIRE(json == document);
+  REQUIRE(std::size(json) == std::size(dictionary));
+  REQUIRE(json == dictionary);
 }

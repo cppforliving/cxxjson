@@ -10,7 +10,7 @@ TEST_CASE("can default construct cxx::json")
 {
   static_assert(std::is_nothrow_default_constructible_v<cxx::json>);
   cxx::json const json;
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
   REQUIRE(std::size(json) == 0);
 }
 
@@ -19,8 +19,8 @@ TEST_CASE("can copy construct cxx::json")
   static_assert(std::is_copy_constructible_v<cxx::json>);
   cxx::json const orig;
   cxx::json const copy(orig);
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(orig));
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(copy));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(orig));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(copy));
   REQUIRE(orig == copy);
 }
 
@@ -29,7 +29,7 @@ TEST_CASE("can move construct cxx::json")
   static_assert(std::is_nothrow_move_constructible_v<cxx::json>);
   cxx::json orig;
   cxx::json const copy(std::move(orig));
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(copy));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(copy));
 }
 
 TEST_CASE("can directly initialize cxx::json from std::int64_t")
@@ -124,11 +124,11 @@ TEST_CASE("can create cxx::json from cxx::json::array")
   REQUIRE(std::size(arr) == 2);
 }
 
-TEST_CASE("can create cxx::json from cxx::json::document")
+TEST_CASE("can create cxx::json from cxx::json::dictionary")
 {
-  static_assert(std::is_constructible_v<cxx::json, cxx::json::document const&>);
-  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::document&&>);
-  cxx::json::document const document = {
+  static_assert(std::is_constructible_v<cxx::json, cxx::json::dictionary const&>);
+  static_assert(std::is_nothrow_constructible_v<cxx::json, cxx::json::dictionary&&>);
+  cxx::json::dictionary const dictionary = {
       // clang-format off
       {"lorem"s, 42l},
       {"ipsum"s, cxx::json::null},
@@ -136,15 +136,15 @@ TEST_CASE("can create cxx::json from cxx::json::document")
       {"sit"s, 3.14}
       // clang-format on
   };
-  cxx::json const json(document);
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
-  REQUIRE(json == document);
+  cxx::json const json(dictionary);
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
+  REQUIRE(json == dictionary);
   REQUIRE(std::size(json) == 4);
 
-  cxx::json const doc(cxx::json::document({{"lorem"s, cxx::json::null}, {"ipsum"s, 3.14}}));
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(doc));
-  REQUIRE(doc == cxx::json::document({{"lorem"s, cxx::json::null}, {"ipsum"s, 3.14}}));
-  REQUIRE(std::size(doc) == 2);
+  cxx::json const dict(cxx::json::dictionary({{"lorem"s, cxx::json::null}, {"ipsum"s, 3.14}}));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(dict));
+  REQUIRE(dict == cxx::json::dictionary({{"lorem"s, cxx::json::null}, {"ipsum"s, 3.14}}));
+  REQUIRE(std::size(dict) == 2);
 }
 
 TEST_CASE("can create cxx::json from std::initializer_list<json>")
@@ -180,10 +180,10 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, 
       // clang-format on
   };
 
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
   REQUIRE(json ==
           // clang-format off
-          cxx::json::document(
+          cxx::json::dictionary(
             {
               {"lorem", 42},
               {"ipsum", true},
@@ -192,10 +192,10 @@ TEST_CASE("can create cxx::json from std::initializer_list<std::pair<json::key, 
             }
           )
           // clang-format on
-          );
+  );
 }
 
-TEST_CASE("can create cxx::json from nested document")
+TEST_CASE("can create cxx::json from nested dictionary")
 {
   using namespace cxx::literals;
   cxx::json const json = {
@@ -209,9 +209,9 @@ TEST_CASE("can create cxx::json from nested document")
       }
       // clang-format on
   };
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json));
   REQUIRE(cxx::holds_alternative<std::int64_t>(json["lorem"]));
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(json["ipsum"]));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(json["ipsum"]));
   REQUIRE(json["lorem"] == 42);
   REQUIRE(json["ipsum"]["dolor"] == cxx::json::null);
   REQUIRE(json["ipsum"]["sit"] == 3.14);
@@ -225,8 +225,8 @@ TEST_CASE("can create cxx::json from nested document")
       }
       // clang-format on
   };
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(other));
-  REQUIRE(cxx::holds_alternative<cxx::json::document>(other["a"]));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(other));
+  REQUIRE(cxx::holds_alternative<cxx::json::dictionary>(other["a"]));
   REQUIRE(other["a"]["b"] == "c");
 }
 

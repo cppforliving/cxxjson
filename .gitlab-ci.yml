@@ -47,6 +47,12 @@ stages:
   after_script:
   - >-
      gcovr
+     --root=build
+     --filter='.*cxx.*'
+     --filter='.*src.*'
+     --fail-under-line=100
+  - >-
+     gcovr
      --branch
      --root=build
      --filter='.*cxx.*'
