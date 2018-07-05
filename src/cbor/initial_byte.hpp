@@ -4,6 +4,17 @@
 
 namespace cxx
 {
+  auto const read_to = [](auto& t, cxx::json::byte_view bytes) {
+    auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&t));
+    std::copy(bytes.data(), bytes.data() + sizeof(t), dest);
+  };
+
+  auto const write_to = [](auto const& t, cxx::json::byte_stream::pointer dest) {
+    auto const* first =
+        static_cast<cxx::json::byte_stream::const_pointer>(static_cast<void const*>(&t));
+    std::copy(first, first + sizeof(t), dest);
+  };
+
   auto const htonll = [](std::uint64_t x) -> std::uint64_t {
     return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
            htonl(static_cast<std::uint32_t>(x >> 32));

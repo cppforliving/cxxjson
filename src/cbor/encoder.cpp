@@ -40,13 +40,13 @@ namespace detail
         *it = cxx::byte(0xff & x);
         break;
       case 1:
-        reinterpret_cast<std::uint16_t&>(*it) = htons(static_cast<std::uint16_t>(0xffff & x));
+        cxx::write_to(htons(static_cast<std::uint16_t>(0xffff & x)), std::addressof(*it));
         break;
       case 2:
-        reinterpret_cast<std::uint32_t&>(*it) = htonl(static_cast<std::uint32_t>(0xffffffff & x));
+        cxx::write_to(htonl(static_cast<std::uint32_t>(0xffffffff & x)), std::addressof(*it));
         break;
       case 3:
-        reinterpret_cast<std::uint64_t&>(*it) = cxx::htonll(x);
+        cxx::write_to(cxx::htonll(x), std::addressof(*it));
         break;
     }
     return *(--it);

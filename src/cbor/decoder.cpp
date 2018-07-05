@@ -15,15 +15,17 @@ namespace
       [](std::uint8_t, cxx::json::byte_view bytes) -> std::int64_t {
         return static_cast<std::int64_t>(bytes.front());
       },
-      [](std::uint16_t, cxx::json::byte_view bytes) -> std::int64_t {
-        return cxx::ntoh(*reinterpret_cast<std::uint16_t const*>(bytes.data()));
+      [](std::uint16_t x, cxx::json::byte_view bytes) -> std::int64_t {
+        cxx::read_to(x, bytes);
+        return cxx::ntoh(x);
       },
-      [](std::uint32_t, cxx::json::byte_view bytes) -> std::int64_t {
-        return cxx::ntoh(*reinterpret_cast<std::uint32_t const*>(bytes.data()));
+      [](std::uint32_t x, cxx::json::byte_view bytes) -> std::int64_t {
+        cxx::read_to(x, bytes);
+        return cxx::ntoh(x);
       },
       [](std::uint64_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        auto const* pu = static_cast<std::uint64_t const*>(static_cast<void const*>(bytes.data()));
-        x = cxx::ntoh(*pu);
+        cxx::read_to(x, bytes);
+        x = cxx::ntoh(x);
         if (x > std::numeric_limits<std::int64_t>::max())
           throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
         return static_cast<std::int64_t>(x);
@@ -197,9 +199,9 @@ namespace
   auto const floating_point_value = [](cxx::json::byte_view& bytes, auto sink) {
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
-    auto const* pd = static_cast<T const*>(static_cast<void const*>(bytes.data()));
-    double x = cxx::ntoh(*pd);
-    sink(x);
+    double x = 0.0;
+    cxx::read_to(x, bytes);
+    sink(cxx::ntoh(x));
     bytes.remove_prefix(sizeof(T));
   };
 
