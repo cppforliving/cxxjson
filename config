@@ -29,6 +29,8 @@ set_flags() {
     'sanitize')
       CXXFLAGS="${CXXFLAGS} -fsanitize=address -fsanitize=undefined"
       LINKFLAGS="${LINKFLAGS} -fsanitize=address -fsanitize=undefined"
+      export ASAN_OPTIONS=symbolize=1:abort_on_error=1
+      export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
     ;;
     'coverage')
       CXXFLAGS="${CXXFLAGS} -fprofile-arcs -ftest-coverage"

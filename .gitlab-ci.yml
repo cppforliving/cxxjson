@@ -78,14 +78,14 @@ gcc:benchmark:
   before_script:
   - source config release
   - export CXX=g++
-  script: ./waf benchmark
+  script: ./waf configure benchmark
 
 clang:libstdc++:benchmark:
   stage: benchmark
   before_script:
   - source config release
   - export CXX=clang++
-  script: ./waf benchmark
+  script: ./waf configure benchmark
 
 gcc:coverage:
   stage: post
