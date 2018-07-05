@@ -6,46 +6,93 @@ stages:
 - benchmark
 - post
 
-.template: &gcc
-  variables:
-    CXX: g++
+.template: &build
+  script:
+  - ./waf configure --prefix=usr build install --destdir=/
 
-.template: &clang
-  variables:
-    CXX: clang++
-
-.template: &libcxx
-  variables:
-    CXXFLAGS: -stdlib=libc++
-    CXX: clang++
-    LINKFLAGS: -stdlib=libc++
-
-.template: &debug
+gcc:debug:
+  stage: build
+  <<: *build
   before_script:
-  - source ./config/debug.sh
+  - source config debug
+  - export CXX=g++
 
-.template: &release
+gcc:release:
+  stage: build
+  <<: *build
   before_script:
-  - source ./config/release.sh
+  - source config release
+  - export CXX=g++
 
-.template: &sanitize
+clang:libstdc++:debug:
+  stage: build
+  <<: *build
+  before_script:
+  - source config debug
+  - export CXX=clang++
+
+clang:libstdc++:release:
+  stage: build
+  <<: *build
+  before_script:
+  - source config release
+  - export CXX=clang++
+
+clang:libcxx:debug:
+  stage: build
+  <<: *build
+  before_script:
+  - source config debug libc++
+  - export CXX=clang++
+
+clang:libcxx:release:
+  stage: build
+  <<: *build
+  before_script:
+  - source config release libc++
+  - export CXX=clang++
+
+gcc:sanitize:
   stage: sanitize
+  <<: *build
   before_script:
-  - source ./config/sanitize.sh
-  - export UBSAN_OPTIONS=halt_on_error=1
-  - export ASAN_OPTIONS=abort_on_error=1
+  - source config release sanitize
+  - export CXX=g++
 
-.template: &benchmark
+clang:libstdc++:sanitize:
+  stage: sanitize
+  <<: *build
+  before_script:
+  - source config release sanitize
+  - export CXX=clang++
+
+clang:libcxx:sanitize:
+  stage: sanitize
+  <<: *build
+  before_script:
+  - source config release libc++ sanitize
+  - export CXX=clang++
+
+gcc:benchmark:
   stage: benchmark
   before_script:
-  - source ./config/release.sh
-  after_script:
-  - ./waf benchmark
+  - source config release
+  - export CXX=g++
+  script: ./waf benchmark
 
-.template: &coverage
-  stage: post
+clang:libstdc++:benchmark:
+  stage: benchmark
   before_script:
-  - source ./config/coverage.sh
+  - source config release
+  - export CXX=clang++
+  script: ./waf benchmark
+
+gcc:coverage:
+  stage: post
+  <<: *build
+  before_script:
+  - source config debug coverage
+  - export CXX=g++
   after_script:
   - >-
      gcovr
@@ -61,79 +108,9 @@ stages:
      --filter='.*src.*'
      --print-summary
 
-.template: &build
-  script:
-  - ./waf configure --prefix=usr build install --destdir=/
-
-gcc:debug:
-  stage: build
-  <<: *gcc
-  <<: *debug
-  <<: *build
-
-gcc:release:
-  stage: build
-  <<: *gcc
-  <<: *release
-  <<: *build
-
-clang:libstdc++:debug:
-  stage: build
-  <<: *clang
-  <<: *debug
-  <<: *build
-
-clang:libstdc++:release:
-  stage: build
-  <<: *clang
-  <<: *release
-  <<: *build
-
-clang:libcxx:debug:
-  stage: build
-  <<: *libcxx
-  <<: *debug
-  <<: *build
-
-clang:libcxx:release:
-  stage: build
-  <<: *libcxx
-  <<: *release
-  <<: *build
-
-gcc:sanitize:
-  <<: *gcc
-  <<: *sanitize
-  <<: *build
-
-clang:libstdc++:sanitize:
-  <<: *clang
-  <<: *sanitize
-  <<: *build
-
-clang:libcxx:sanitize:
-  <<: *libcxx
-  <<: *sanitize
-  <<: *build
-
-gcc:benchmark:
-  <<: *gcc
-  <<: *benchmark
-  <<: *build
-
-clang:libstdc++:benchmark:
-  <<: *clang
-  <<: *benchmark
-  <<: *build
-
-gcc:coverage:
-  <<: *gcc
-  <<: *coverage
-  <<: *build
-
 clang:fuzzer:
   stage: post
-  <<: *clang
-  <<: *release
-  script:
-    - ./waf configure fuzzer
+  before_script:
+  - source config release sanitize
+  - export CXX=clang++
+  script: ./waf configure fuzzer

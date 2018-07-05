@@ -1,0 +1,67 @@
+#!/bin/bash
+
+set_base_flags() {
+  CXXFLAGS="${CXXFLAGS} -Wall -Wconversion -Werror -Wextra -Wshadow -Wunused -pedantic -pedantic-errors -fno-rtti -fPIC -std=c++17 -Wno-gnu-string-literal-operator-template"
+  LINKFLAGS="${LINKFLAGS}"
+  DEFINES="${DEFINES}"
+}
+
+publish_unique_flags() {
+  CXXFLAGS=$(echo ${CXXFLAGS} | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+  LINKFLAGS=$(echo ${LINKFLAGS} | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+  DEFINES=$(echo ${DEFINES} | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+  export CXXFLAGS
+  export LINKFLAGS
+  export DEFINES
+}
+
+set_flags() {
+  case "$1" in
+    'debug')
+      CXXFLAGS="${CXXFLAGS} -g -O0"
+      DEFINES="${DEFINES} DEBUG"
+    ;;
+    'release')
+      CXXFLAGS="${CXXFLAGS} -O3 -march=native"
+      DEFINES="${DEFINES} NDEBUG"
+      LINKFLAGS="${LINKFLAGS} -flto"
+    ;;
+    'sanitize')
+      CXXFLAGS="${CXXFLAGS} -fsanitize=address -fsanitize=undefined"
+      LINKFLAGS="${LINKFLAGS} -fsanitize=address -fsanitize=undefined"
+    ;;
+    'coverage')
+      CXXFLAGS="${CXXFLAGS} -fprofile-arcs -ftest-coverage"
+      LINKFLAGS="${LINKFLAGS} -fprofile-arcs -ftest-coverage"
+    ;;
+    'libc++')
+      CXXFLAGS="${CXXFLAGS} -stdlib=libc++"
+      LINKFLAGS="${LINKFLAGS} -stdlib=libc++"
+    ;;
+    *)
+      echo 'wrong switch'
+      exit 1
+  esac
+}
+
+clear_flags() {
+  unset CXXFLAGS
+  unset LINKFLAGS
+  unset DEFINES
+}
+
+if [ "$#" == "0" ]; then
+  exit 1
+fi
+
+while (( "$#" )); do
+  if [ "$1" == "clear" ]; then
+    clear_flags
+  else
+    set_flags $1
+  fi
+  shift
+done
+
+set_base_flags
+publish_unique_flags
