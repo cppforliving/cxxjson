@@ -78,7 +78,7 @@ namespace
                              Sink sink)
   {
     return parse(tag<initial_byte::type::positive>, byte, bytes,
-                 [&sink](std::int64_t x) { sink(-(x + 1)); });
+                 [&sink](std::int64_t x) { sink(-x - 1); });
   }
 
   template <typename Sink>
