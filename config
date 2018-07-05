@@ -40,6 +40,12 @@ set_flags() {
       CXXFLAGS="${CXXFLAGS} -stdlib=libc++"
       LINKFLAGS="${LINKFLAGS} -stdlib=libc++"
     ;;
+    'g++')
+      export CXX="g++"
+    ;;
+    'clang++')
+      export CXX="clang++"
+    ;;
     *)
       echo 'wrong switch'
       exit 1
