@@ -199,9 +199,10 @@ namespace
   auto const floating_point_value = [](cxx::json::byte_view& bytes, auto sink) {
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
-    double x = 0.0;
+    T x = 0.0;
     cxx::read_to(x, bytes);
-    sink(cxx::ntoh(x));
+    double ret = cxx::ntoh(x);
+    sink(ret);
     bytes.remove_prefix(sizeof(T));
   };
 
