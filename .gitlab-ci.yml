@@ -52,25 +52,49 @@ clang:libcxx:release:
   - source config release libc++
   - export CXX=clang++
 
-gcc:sanitize:
+gcc:release:sanitize:
   stage: sanitize
   <<: *build
   before_script:
   - source config release sanitize
   - export CXX=g++
+  allow_failure: true # https://github.com/catchorg/Catch2/issues/1329
 
-clang:libstdc++:sanitize:
+clang:libstdc++:release:sanitize:
   stage: sanitize
   <<: *build
   before_script:
   - source config release sanitize
   - export CXX=clang++
+  allow_failure: true # https://github.com/catchorg/Catch2/issues/1329
 
-clang:libcxx:sanitize:
+clang:libcxx:release:sanitize:
   stage: sanitize
   <<: *build
   before_script:
   - source config release libc++ sanitize
+  - export CXX=clang++
+
+gcc:debug:sanitize:
+  stage: sanitize
+  <<: *build
+  before_script:
+  - source config debug sanitize
+  - export CXX=g++
+
+clang:libstdc++:debug:sanitize:
+  stage: sanitize
+  <<: *build
+  before_script:
+  - source config debug sanitize
+  - export CXX=clang++
+  allow_failure: true # https://github.com/catchorg/Catch2/issues/1329
+
+clang:libcxx:debug:sanitize:
+  stage: sanitize
+  <<: *build
+  before_script:
+  - source config debug libc++ sanitize
   - export CXX=clang++
 
 gcc:benchmark:
