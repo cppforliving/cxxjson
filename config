@@ -1,4 +1,6 @@
 #!/bin/bash
+SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+PROJECT_DIR=$(readlink -f ${SCRIPT_DIR})
 
 set_base_flags() {
   CXXFLAGS="${CXXFLAGS} -Wall -Wconversion -Werror -Wextra -Wshadow -Wunused -pedantic -pedantic-errors -fno-rtti -fPIC -std=c++17 -Wno-gnu-string-literal-operator-template"
@@ -30,7 +32,7 @@ set_flags() {
       CXXFLAGS="${CXXFLAGS} -fsanitize=address -fsanitize=undefined"
       LINKFLAGS="${LINKFLAGS} -fsanitize=address -fsanitize=undefined"
       export ASAN_OPTIONS=symbolize=1:abort_on_error=1
-      export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+      export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=${PROJECT_DIR}/test/ub.supp
     ;;
     'coverage')
       CXXFLAGS="${CXXFLAGS} -fprofile-arcs -ftest-coverage"

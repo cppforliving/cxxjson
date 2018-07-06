@@ -58,7 +58,6 @@ gcc:release:sanitize:
   before_script:
   - source config release sanitize
   - export CXX=g++
-  allow_failure: true # https://github.com/catchorg/Catch2/issues/1329
 
 clang:libstdc++:release:sanitize:
   stage: sanitize
@@ -66,7 +65,6 @@ clang:libstdc++:release:sanitize:
   before_script:
   - source config release sanitize
   - export CXX=clang++
-  allow_failure: true # https://github.com/catchorg/Catch2/issues/1329
 
 clang:libcxx:release:sanitize:
   stage: sanitize
@@ -88,7 +86,6 @@ clang:libstdc++:debug:sanitize:
   before_script:
   - source config debug sanitize
   - export CXX=clang++
-  allow_failure: true # https://github.com/catchorg/Catch2/issues/1329
 
 clang:libcxx:debug:sanitize:
   stage: sanitize
