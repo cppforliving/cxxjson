@@ -98,11 +98,11 @@ TEST_CASE("official cbor test vectors decoding")
   REQUIRE_THROWS_AS(cbor::decode("f97c00"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("f97e00"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("f9fc00"_hex), cbor::unsupported);
-  REQUIRE(cbor::decode("fa7f800000"_hex) == 1.0 / 0.0);
+  REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("fa7f800000"_hex))));
   REQUIRE(std::isnan(cxx::get<double>(cbor::decode("fa7fc00000"_hex))));
-  REQUIRE(cbor::decode("faff800000"_hex) == -1.0 / 0.0);
+  REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("faff800000"_hex))));
   REQUIRE(std::isnan(cxx::get<double>(cbor::decode("fb7ff8000000000000"_hex))));
-  REQUIRE(cbor::decode("fbfff0000000000000"_hex) == -1.0 / 0.0);
+  REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("fbfff0000000000000"_hex))));
   REQUIRE(cbor::decode("f4"_hex) == false);
   REQUIRE(cbor::decode("f5"_hex) == true);
   REQUIRE(cbor::decode("f6"_hex) == cxx::json::null);
