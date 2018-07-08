@@ -144,12 +144,18 @@ TEST_CASE("official cbor test vectors decoding")
           cxx::json::dictionary({{"a", "A"}, {"b", "B"}, {"c", "C"}, {"d", "D"}, {"e", "E"}}));
   REQUIRE_THROWS_AS(cbor::decode("5f42010243030405ff"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("7f657374726561646d696e67ff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("9fff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("9f018202039f0405ffff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("9f01820203820405ff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("83018202039f0405ff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"_hex),
-                    cbor::unsupported);
+  REQUIRE(cbor::decode("9fff"_hex) == cxx::json::array());
+  REQUIRE(cbor::decode("9f018202039f0405ffff"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("9f01820203820405ff"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("83018202039f0405ff"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("83019f0203ff820405"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"_hex) ==
+          cxx::json::array({1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
+                            14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}));
   REQUIRE_THROWS_AS(cbor::decode("bf61610161629f0203ffff"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("826161bf61626163ff"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("bf6346756ef563416d7421ff"_hex), cbor::unsupported);

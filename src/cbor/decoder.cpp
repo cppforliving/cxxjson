@@ -148,16 +148,33 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
-      throw cxx::cbor::unsupported("infinite size collections are not supported");
-    cxx::json::array::size_type size = 0;
-    bytes = parse(tag<initial_byte::type::positive>, byte, bytes,
-                  [&size](std::int64_t x) { size = static_cast<cxx::json::array::size_type>(x); });
-    if (size > cxx::cbor::max_size)
-      throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
     cxx::json::array array;
-    array.reserve(size);
-    while (size--) bytes = parse(bytes, emplace_to(array));
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
+    {
+      auto const sentinel = [](cxx::json::byte_view data) {
+        if (std::empty(data))
+          throw cxx::cbor::truncation_error("break byte missing for indefinite-length array");
+        return data.front() != std::byte(0xff);
+      };
+      while (sentinel(bytes))
+      {
+        if (std::size(array) == cxx::cbor::max_size)
+          throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
+        bytes = parse(bytes, emplace_to(array));
+      }
+      bytes.remove_prefix(1);
+    }
+    else
+    {
+      cxx::json::array::size_type size = 0;
+      bytes = parse(tag<initial_byte::type::positive>, byte, bytes, [&size](std::int64_t x) {
+        size = static_cast<cxx::json::array::size_type>(x);
+      });
+      if (size > cxx::cbor::max_size)
+        throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
+      array.reserve(size);
+      while (size--) bytes = parse(bytes, emplace_to(array));
+    }
     sink(std::move(array));
     return bytes;
   }
