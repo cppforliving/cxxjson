@@ -82,7 +82,7 @@ namespace
   };
 
   template <typename Sink>
-  cxx::json::byte_view parse(cxx::json::byte_view, Sink);
+  cxx::json::byte_view parse(cxx::json::byte_view, Sink, std::size_t = cxx::cbor::max_nesting);
 
   template <typename Int, typename Sink>
   cxx::json::byte_view parse(Int, cxx::json::byte_view bytes, Sink sink)
@@ -196,8 +196,10 @@ namespace
   cxx::json::byte_view parse(tag_t<initial_byte::type::array>,
                              cxx::byte byte,
                              cxx::json::byte_view bytes,
-                             Sink sink)
+                             Sink sink,
+                             std::size_t level)
   {
+    if (--level == 0) throw cxx::cbor::unsupported("nesting level exceeds implementation limit");
     if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
       throw cxx::cbor::unsupported("infinite size collections are not supported");
     cxx::json::array::size_type size = 0;
@@ -207,7 +209,7 @@ namespace
       throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
     cxx::json::array array;
     array.reserve(size);
-    while (size--) bytes = parse(bytes, emplace_to(array));
+    while (size--) bytes = parse(bytes, emplace_to(array), level);
     sink(std::move(array));
     return bytes;
   }
@@ -216,8 +218,10 @@ namespace
   cxx::json::byte_view parse(tag_t<initial_byte::type::dictionary>,
                              cxx::byte byte,
                              cxx::json::byte_view bytes,
-                             Sink sink)
+                             Sink sink,
+                             std::size_t level)
   {
+    if (--level == 0) throw cxx::cbor::unsupported("nesting level exceeds implementation limit");
     if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
       throw cxx::cbor::unsupported("infinite size collections are not supported");
     cxx::json::dictionary::size_type size = 0;
@@ -239,7 +243,7 @@ namespace
       std::string_view key;
       bytes = parse(tag<initial_byte::type::unicode>, init, bytes,
                     [&key](std::string_view x) { key = x; });
-      bytes = parse(bytes, emplace_to(dict, key));
+      bytes = parse(bytes, emplace_to(dict, key), level);
     }
     sink(std::move(dict));
     return bytes;
@@ -313,7 +317,7 @@ namespace
   }
 
   template <typename Sink>
-  cxx::json::byte_view parse(cxx::json::byte_view bytes, Sink sink)
+  cxx::json::byte_view parse(cxx::json::byte_view bytes, Sink sink, std::size_t level)
   {
     if (bytes.empty()) throw cxx::cbor::truncation_error("not enough data to decode json");
     auto const byte = bytes.front();
@@ -329,9 +333,9 @@ namespace
       case initial_byte::type::unicode:
         return parse(tag<initial_byte::type::unicode>, byte, bytes, sink);
       case initial_byte::type::array:
-        return parse(tag<initial_byte::type::array>, byte, bytes, sink);
+        return parse(tag<initial_byte::type::array>, byte, bytes, sink, level);
       case initial_byte::type::dictionary:
-        return parse(tag<initial_byte::type::dictionary>, byte, bytes, sink);
+        return parse(tag<initial_byte::type::dictionary>, byte, bytes, sink, level);
       case initial_byte::type::special:
         return parse(tag<initial_byte::type::special>, byte, bytes, sink);
       default:
