@@ -31,6 +31,56 @@ namespace
         return static_cast<std::int64_t>(x);
       });
 
+  auto const read_half_float = [](cxx::json::byte_view& bytes, auto sink) {
+    if (std::size(bytes) < sizeof(std::uint16_t))
+      throw cxx::cbor::truncation_error("not enough data to decode floating point value");
+    std::uint16_t x = 0;
+    cxx::read_to(x, bytes);
+    x = cxx::ntoh(x);
+    auto const halfbits_to_floatbits = [](std::uint16_t h) -> std::uint32_t {
+      std::uint16_t h_exp, h_sig;
+      std::uint32_t f_sgn, f_exp, f_sig;
+
+      h_exp = (h & 0x7c00u);
+      f_sgn = ((std::uint32_t)h & 0x8000u) << 16;
+      switch (h_exp)
+      {
+        case 0x0000u: /* 0 or subnormal */
+          h_sig = (h & 0x03ffu);
+          /* Signed zero */
+          if (h_sig == 0) { return f_sgn; }
+          /* Subnormal */
+          h_sig = static_cast<std::uint16_t>(h_sig << 1);
+          while ((h_sig & 0x0400u) == 0)
+          {
+            h_sig = static_cast<std::uint16_t>(h_sig << 1);
+            h_exp++;
+          }
+          f_exp = ((std::uint32_t)(127 - 15 - h_exp)) << 23;
+          f_sig = ((std::uint32_t)(h_sig & 0x03ffu)) << 13;
+          return f_sgn + f_exp + f_sig;
+        case 0x7c00u: /* inf or NaN */
+          /* All-ones exponent and a copy of the significand */
+          return f_sgn + 0x7f800000u + (((std::uint32_t)(h & 0x03ffu)) << 13);
+        default: /* normalized */
+          /* Just need to adjust the exponent and shift */
+          return f_sgn + (((std::uint32_t)(h & 0x7fffu) + 0x1c000u) << 13);
+      }
+    };
+    static_assert(alignof(std::uint32_t) == alignof(float));
+    static_assert(sizeof(std::uint32_t) == sizeof(float));
+    union horrible_cast
+    {
+      horrible_cast() = default;
+      std::uint32_t uint = 0;
+      float floating;
+    } u;
+    u.uint = halfbits_to_floatbits(x);
+    double d = u.floating;
+    sink(d);
+    bytes.remove_prefix(sizeof(std::uint16_t));
+  };
+
   template <typename Sink>
   cxx::json::byte_view parse(cxx::json::byte_view, Sink);
 
@@ -246,6 +296,9 @@ namespace
           throw cxx::cbor::truncation_error("not enough data to decode simple value");
         simple_value(bytes.at(0));
         bytes.remove_prefix(1);
+        break;
+      case initial_byte::value::ieee_754_half:
+        read_half_float(bytes, sink);
         break;
       case initial_byte::value::ieee_754_single:
         floating_point_value<float>(bytes, sink);
