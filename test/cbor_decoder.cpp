@@ -172,6 +172,11 @@ TEST_CASE("cbor can decode arrays")
   {
     REQUIRE_THROWS_AS(cbor::decode("9a00010000"_hex), cbor::unsupported);
   }
+  SECTION("nesting exceeds limit")
+  {
+    cxx::json::byte_stream data(cxx::cbor::max_nesting + 2, cxx::byte(0x81));
+    REQUIRE_THROWS_AS(cbor::decode(data), cbor::unsupported);
+  }
 
   REQUIRE(cbor::decode("80"_hex) == cxx::json::array());
   SECTION("one item")
@@ -212,6 +217,32 @@ TEST_CASE("cbor can decode dictionaties")
   SECTION("key type is not unicode")
   {
     REQUIRE_THROWS_AS(cbor::decode("a118181818"_hex), cbor::unsupported);
+  }
+  SECTION("nesting exceeds limit")
+  {
+    cxx::json::byte_stream data;
+    data.reserve(3 * (cxx::cbor::max_nesting + 3));
+    data.push_back(cxx::byte(0xa1));
+    while (std::size(data) < 3 * (cxx::cbor::max_nesting + 1))
+    {
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0xa1));
+    }
+    REQUIRE_THROWS_AS(cbor::decode(data), cbor::unsupported);
+  }
+  SECTION("mix objects nesting exceeds limit")
+  {
+    cxx::json::byte_stream data;
+    data.reserve(4 * (cxx::cbor::max_nesting + 3));
+    while (std::size(data) < 4 * (cxx::cbor::max_nesting + 1))
+    {
+      data.push_back(cxx::byte(0xa1));
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0x81));
+    }
+    REQUIRE_THROWS_AS(cbor::decode(data), cbor::unsupported);
   }
   REQUIRE(cbor::decode("a0"_hex) == cxx::json::dictionary());
   SECTION("one item")
