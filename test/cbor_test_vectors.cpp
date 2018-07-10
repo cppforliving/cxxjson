@@ -82,22 +82,22 @@ TEST_CASE("official cbor test vectors decoding")
   REQUIRE(cbor::decode("29"_hex) == -10);
   REQUIRE(cbor::decode("3863"_hex) == -100);
   REQUIRE(cbor::decode("3903e7"_hex) == -1000);
-  REQUIRE_THROWS_AS(cbor::decode("f90000"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f98000"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f93c00"_hex), cbor::unsupported);
+  REQUIRE(cbor::decode("f90000"_hex) == 0.0);
+  REQUIRE(cbor::decode("f98000"_hex) == -0.0);
+  REQUIRE(cbor::decode("f93c00"_hex) == 1.0);
   REQUIRE(cbor::decode("fb3ff199999999999a"_hex) == 1.1);
-  REQUIRE_THROWS_AS(cbor::decode("f93e00"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f97bff"_hex), cbor::unsupported);
+  REQUIRE(cbor::decode("f93e00"_hex) == 1.5);
+  REQUIRE(cbor::decode("f97bff"_hex) == 65504.0);
   REQUIRE(cbor::decode("fa47c35000"_hex) == 100000.0);
   REQUIRE(cbor::decode("fa7f7fffff"_hex) == 3.4028234663852886e+38);
   REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
-  REQUIRE_THROWS_AS(cbor::decode("f90001"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f90400"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f9c400"_hex), cbor::unsupported);
+  REQUIRE(cbor::decode("f90001"_hex) == 5.960464477539063e-08);
+  REQUIRE(cbor::decode("f90400"_hex) == 6.103515625e-05);
+  REQUIRE(cbor::decode("f9c400"_hex) == -4.0);
   REQUIRE(cbor::decode("fbc010666666666666"_hex) == -4.1);
-  REQUIRE_THROWS_AS(cbor::decode("f97c00"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f97e00"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("f9fc00"_hex), cbor::unsupported);
+  REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("f97c00"_hex))));
+  REQUIRE(std::isnan(cxx::get<double>(cbor::decode("f97e00"_hex))));
+  REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("f9fc00"_hex))));
   REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("fa7f800000"_hex))));
   REQUIRE(std::isnan(cxx::get<double>(cbor::decode("fa7fc00000"_hex))));
   REQUIRE(!std::isfinite(cxx::get<double>(cbor::decode("faff800000"_hex))));
@@ -156,7 +156,10 @@ TEST_CASE("official cbor test vectors decoding")
   REQUIRE(cbor::decode("9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"_hex) ==
           cxx::json::array({1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
                             14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}));
-  REQUIRE_THROWS_AS(cbor::decode("bf61610161629f0203ffff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("826161bf61626163ff"_hex), cbor::unsupported);
-  REQUIRE_THROWS_AS(cbor::decode("bf6346756ef563416d7421ff"_hex), cbor::unsupported);
+  REQUIRE(cbor::decode("bf61610161629f0203ffff"_hex) ==
+          cxx::json::dictionary({{"a", 1}, {"b", cxx::json::array({2, 3})}}));
+  REQUIRE(cbor::decode("826161bf61626163ff"_hex) ==
+          cxx::json::array({"a", cxx::json::dictionary({{"b", "c"}})}));
+  auto const json = cbor::decode("bf6346756ef563416d7421ff"_hex);
+  REQUIRE(json == cxx::json::dictionary({{"Fun", true}, {"Amt", -2}}));
 }

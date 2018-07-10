@@ -16,7 +16,6 @@ TEST_CASE("cbor throws exception on unsupported tag")
   {
     REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::unsupported);
     REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::unsupported);
   }
 }
 
@@ -171,6 +170,11 @@ TEST_CASE("cbor can decode arrays")
   {
     REQUIRE_THROWS_AS(cbor::decode("9a00010000"_hex), cbor::unsupported);
   }
+  SECTION("nesting exceeds limit")
+  {
+    cxx::json::byte_stream data(cxx::cbor::max_nesting + 2, cxx::byte(0x81));
+    REQUIRE_THROWS_AS(cbor::decode(data), cbor::unsupported);
+  }
 
   REQUIRE(cbor::decode("80"_hex) == cxx::json::array());
   SECTION("one item")
@@ -211,6 +215,32 @@ TEST_CASE("cbor can decode dictionaties")
   SECTION("key type is not unicode")
   {
     REQUIRE_THROWS_AS(cbor::decode("a118181818"_hex), cbor::unsupported);
+  }
+  SECTION("nesting exceeds limit")
+  {
+    cxx::json::byte_stream data;
+    data.reserve(3 * (cxx::cbor::max_nesting + 3));
+    data.push_back(cxx::byte(0xa1));
+    while (std::size(data) < 3 * (cxx::cbor::max_nesting + 1))
+    {
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0xa1));
+    }
+    REQUIRE_THROWS_AS(cbor::decode(data), cbor::unsupported);
+  }
+  SECTION("mix objects nesting exceeds limit")
+  {
+    cxx::json::byte_stream data;
+    data.reserve(4 * (cxx::cbor::max_nesting + 3));
+    while (std::size(data) < 4 * (cxx::cbor::max_nesting + 1))
+    {
+      data.push_back(cxx::byte(0xa1));
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0x61));
+      data.push_back(cxx::byte(0x81));
+    }
+    REQUIRE_THROWS_AS(cbor::decode(data), cbor::unsupported);
   }
   REQUIRE(cbor::decode("a0"_hex) == cxx::json::dictionary());
   SECTION("one item")
@@ -257,13 +287,11 @@ TEST_CASE("cbor can decode floating point numbers")
 {
   SECTION("can identify truncation erros")
   {
+    REQUIRE_THROWS_AS(cbor::decode("f900"_hex), cbor::truncation_error);
     REQUIRE_THROWS_AS(cbor::decode("fa000000"_hex), cbor::truncation_error);
     REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::truncation_error);
   }
-  SECTION("half precision floating point numbers are not supported")
-  {
-    REQUIRE_THROWS_AS(cbor::decode("f97bff"_hex), cbor::unsupported);
-  }
+  REQUIRE(cbor::decode("f97bff"_hex) == 65504.0);
   REQUIRE(cbor::decode("fa47c35000"_hex) == 100000.0);
   REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
   REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
@@ -292,4 +320,9 @@ TEST_CASE("indefinite-length arrays")
   REQUIRE(cbor::decode("9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"_hex) ==
           cxx::json::array({1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
                             14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}));
+}
+
+TEST_CASE("indefinite-lenght dictionaties")
+{
+  REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::truncation_error);
 }
