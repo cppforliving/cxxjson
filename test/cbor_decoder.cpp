@@ -258,13 +258,11 @@ TEST_CASE("cbor can decode floating point numbers")
 {
   SECTION("can identify truncation erros")
   {
+    REQUIRE_THROWS_AS(cbor::decode("f900"_hex), cbor::truncation_error);
     REQUIRE_THROWS_AS(cbor::decode("fa000000"_hex), cbor::truncation_error);
     REQUIRE_THROWS_AS(cbor::decode("fb00000000000000"_hex), cbor::truncation_error);
   }
-  SECTION("half precision floating point numbers are not supported")
-  {
-    REQUIRE_THROWS_AS(cbor::decode("f97bff"_hex), cbor::unsupported);
-  }
+  REQUIRE(cbor::decode("f97bff"_hex) == 65504.0);
   REQUIRE(cbor::decode("fa47c35000"_hex) == 100000.0);
   REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
   REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);

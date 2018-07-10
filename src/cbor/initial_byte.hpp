@@ -95,6 +95,7 @@ namespace cxx::codec::cbor
       static inline constexpr base_type<cxx::byte> True = 0xf5;
       static inline constexpr base_type<cxx::byte> Null = 0xf6;
       static inline constexpr base_type<cxx::byte> Simple = 0xf8;
+      static inline constexpr base_type<cxx::byte> ieee_754_half = 0xf9;
       static inline constexpr base_type<cxx::byte> ieee_754_single = 0xfa;
       static inline constexpr base_type<cxx::byte> ieee_754_double = 0xfb;
     };
