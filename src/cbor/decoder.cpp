@@ -151,8 +151,8 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
-      throw cxx::cbor::unsupported("infinite size collections are not supported");
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
+      throw cxx::cbor::unsupported("indefinite size collections are not supported");
     std::size_t const size = [&] {
       std::size_t n = 0;
       auto const leftovers = parse(tag<initial_byte::type::positive>, byte, bytes,
@@ -215,7 +215,7 @@ namespace
   {
     if (--level == 0) throw cxx::cbor::unsupported("nesting level exceeds implementation limit");
     Collection col;
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::infinite)
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
     {
       auto const sentinel = [](cxx::json::byte_view data) {
         if (std::empty(data))

@@ -12,7 +12,7 @@ TEST_CASE("cbor throws exception on unsupported tag")
 {
   REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
-  SECTION("infinite lenght collections")
+  SECTION("indefinite lenght collections")
   {
     REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::unsupported);
     REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::unsupported);
