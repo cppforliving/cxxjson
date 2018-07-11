@@ -12,13 +12,6 @@ TEST_CASE("cbor throws exception on unsupported tag")
 {
   REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
-  SECTION("infinite lenght collections")
-  {
-    REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("9f"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::unsupported);
-  }
 }
 
 TEST_CASE("cbor can decode positive integers")
@@ -298,4 +291,52 @@ TEST_CASE("cbor can decode floating point numbers")
   REQUIRE(cbor::decode("fb0000000000000000"_hex) == 0.0);
   REQUIRE(cbor::decode("fb7e37e43c8800759c"_hex) == 1.0e+300);
   REQUIRE(cbor::decode("fb3ff199999999999a"_hex) == 1.1);
+}
+
+TEST_CASE("indefinite-length arrays")
+{
+  REQUIRE_THROWS_AS(cbor::decode("9f"_hex), cbor::truncation_error);
+  SECTION("max size safety check")
+  {
+    cxx::json::byte_stream stream(3 + cxx::cbor::max_size, cxx::byte(1));
+    stream.front() = std::byte(0x9f);
+    stream.back() = std::byte(0xff);
+    REQUIRE_THROWS_AS(cxx::cbor::decode(stream), cbor::unsupported);
+  }
+  REQUIRE(cbor::decode("9fff"_hex) == cxx::json::array());
+  REQUIRE(cbor::decode("9f018202039f0405ffff"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("9f01820203820405ff"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("83018202039f0405ff"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("83019f0203ff820405"_hex) ==
+          cxx::json::array({1, cxx::json::array({2, 3}), cxx::json::array({4, 5})}));
+  REQUIRE(cbor::decode("9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"_hex) ==
+          cxx::json::array({1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
+                            14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}));
+}
+
+TEST_CASE("indefinite-lenght dictionaties")
+{
+  REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::truncation_error);
+  REQUIRE(cbor::decode("bfff"_hex) == cxx::json::dictionary());
+  REQUIRE(cbor::decode("bf61616162ff"_hex) == cxx::json::dictionary({{"a", "b"}}));
+  REQUIRE(cbor::decode("bf61630061616162ff"_hex) == cxx::json::dictionary({{"a", "b"}, {"c", 0}}));
+}
+
+TEST_CASE("indefinite-lenght byte streams")
+{
+  REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::truncation_error);
+  REQUIRE(cbor::decode("5fff"_hex) == ""_hex);
+  REQUIRE(cbor::decode("5f40ff"_hex) == ""_hex);
+  REQUIRE(cbor::decode("5f4041ff42eeffff"_hex) == "ffeeff"_hex);
+}
+
+TEST_CASE("indefinite-lenght strings")
+{
+  REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::truncation_error);
+  REQUIRE(cbor::decode("7fff"_hex) == "");
+  REQUIRE(cbor::decode("7f60ff"_hex) == "");
+  REQUIRE(cbor::decode("7f6063e6b0b4656c6f72656d64f0908591ff"_hex) == "水lorem𐅑");
 }

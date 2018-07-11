@@ -89,7 +89,7 @@ namespace cxx::codec::cbor
       static inline constexpr base_type<cxx::byte> two_bytes = 25;
       static inline constexpr base_type<cxx::byte> four_bytes = 26;
       static inline constexpr base_type<cxx::byte> eigth_bytes = 27;
-      static inline constexpr base_type<cxx::byte> infinite = 0x1f;
+      static inline constexpr base_type<cxx::byte> indefinite = 0x1f;
 
       static inline constexpr base_type<cxx::byte> False = 0xf4;
       static inline constexpr base_type<cxx::byte> True = 0xf5;
