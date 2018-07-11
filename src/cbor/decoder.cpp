@@ -1,6 +1,7 @@
 #include "inc/cxx/cbor.hpp"
 #include "src/cbor/initial_byte.hpp"
 #include <algorithm>
+#include <list>
 #include <arpa/inet.h>
 
 namespace
@@ -146,13 +147,8 @@ namespace
   }
 
   template <typename Sink>
-  cxx::json::byte_view parse(tag_t<initial_byte::type::bytes>,
-                             cxx::byte byte,
-                             cxx::json::byte_view bytes,
-                             Sink sink)
+  cxx::json::byte_view chunk(cxx::byte byte, cxx::json::byte_view bytes, Sink sink)
   {
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
-      throw cxx::cbor::unsupported("indefinite size collections are not supported");
     std::size_t const size = [&] {
       std::size_t n = 0;
       auto const leftovers = parse(tag<initial_byte::type::positive>, byte, bytes,
@@ -168,15 +164,65 @@ namespace
   }
 
   template <typename Sink>
+  cxx::json::byte_view parse(tag_t<initial_byte::type::bytes>,
+                             cxx::byte byte,
+                             cxx::json::byte_view bytes,
+                             Sink sink)
+  {
+    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
+    {
+      auto const sentinel = [](auto const& data) {
+        if (std::empty(data))
+          throw cxx::cbor::truncation_error("break byte missing for indefinite-length collection");
+        return data.front() != std::byte(0xff);
+      };
+      std::size_t length = 0;
+      std::list<cxx::json::byte_view> chunks;
+      auto collector = [&length, &chunks](cxx::json::byte_view view) mutable {
+        length += std::size(view);
+        chunks.push_back(view);
+      };
+      while (sentinel(bytes))
+      {
+        byte = bytes.front();
+        bytes.remove_prefix(1);
+        bytes = chunk(byte, bytes, collector);
+      }
+      bytes.remove_prefix(1);
+      sink(std::move(chunks), length);
+      return bytes;
+    }
+    else
+      return chunk(byte, bytes, sink);
+  }
+
+  template <typename Stream>
+  auto const merge_to = [](std::list<cxx::json::byte_view> chunks, std::size_t length, auto sink) {
+    Stream stream;
+    stream.reserve(length);
+    for (auto const& item : chunks)
+    {
+      auto first = reinterpret_cast<typename Stream::const_pointer>(item.data());
+      stream.insert(std::end(stream), first, first + std::size(item));
+    }
+    sink(std::move(stream));
+  };
+
+  template <typename Sink>
   cxx::json::byte_view parse(tag_t<initial_byte::type::unicode>,
                              cxx::byte byte,
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    return parse(tag<initial_byte::type::bytes>, byte, bytes, [&sink](cxx::json::byte_view x) {
-      sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
-                            std::size(x)));
-    });
+    auto const adapter = cxx::overload(
+        [&sink](cxx::json::byte_view x) {
+          sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
+                                std::size(x)));
+        },
+        [&sink](std::list<cxx::json::byte_view> chunks, std::size_t length) {
+          merge_to<std::string>(std::move(chunks), length, sink);
+        });
+    return parse(tag<initial_byte::type::bytes>, byte, bytes, adapter);
   }
 
   auto const emplace_to = [](auto& target, std::string_view key = std::string_view()) {
@@ -202,6 +248,9 @@ namespace
     return cxx::overload(
         [impl](cxx::json::byte_view bytes) {
           impl(cxx::json::byte_stream(bytes.data(), bytes.data() + std::size(bytes)));
+        },
+        [impl](std::list<cxx::json::byte_view> chunks, std::size_t length) {
+          merge_to<cxx::json::byte_stream>(chunks, length, impl);
         },
         impl);
   };

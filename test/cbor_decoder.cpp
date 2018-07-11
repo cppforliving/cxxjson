@@ -12,11 +12,6 @@ TEST_CASE("cbor throws exception on unsupported tag")
 {
   REQUIRE_THROWS_AS(cbor::decode("c0"_hex), cbor::unsupported);
   REQUIRE_THROWS_AS(cbor::decode("e0"_hex), cbor::unsupported);
-  SECTION("indefinite lenght collections")
-  {
-    REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::unsupported);
-    REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::unsupported);
-  }
 }
 
 TEST_CASE("cbor can decode positive integers")
@@ -325,4 +320,23 @@ TEST_CASE("indefinite-length arrays")
 TEST_CASE("indefinite-lenght dictionaties")
 {
   REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::truncation_error);
+  REQUIRE(cbor::decode("bfff"_hex) == cxx::json::dictionary());
+  REQUIRE(cbor::decode("bf61616162ff"_hex) == cxx::json::dictionary({{"a", "b"}}));
+  REQUIRE(cbor::decode("bf61630061616162ff"_hex) == cxx::json::dictionary({{"a", "b"}, {"c", 0}}));
+}
+
+TEST_CASE("indefinite-lenght byte streams")
+{
+  REQUIRE_THROWS_AS(cbor::decode("5f"_hex), cbor::truncation_error);
+  REQUIRE(cbor::decode("5fff"_hex) == ""_hex);
+  REQUIRE(cbor::decode("5f40ff"_hex) == ""_hex);
+  REQUIRE(cbor::decode("5f4041ff42eeffff"_hex) == "ffeeff"_hex);
+}
+
+TEST_CASE("indefinite-lenght strings")
+{
+  REQUIRE_THROWS_AS(cbor::decode("7f"_hex), cbor::truncation_error);
+  REQUIRE(cbor::decode("7fff"_hex) == "");
+  REQUIRE(cbor::decode("7f60ff"_hex) == "");
+  REQUIRE(cbor::decode("7f6063e6b0b4656c6f72656d64f0908591ff"_hex) == "水lorem𐅑");
 }
