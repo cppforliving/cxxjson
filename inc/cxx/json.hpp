@@ -308,6 +308,11 @@ namespace cxx
   /*
    *
    */
+  std::string to_string(json const&);
+
+  /*
+   *
+   */
   template <typename T>
   auto operator==(json const& j, T const& rhs) noexcept
       -> std::enable_if_t<json::is_compatibile<T>, bool>;
