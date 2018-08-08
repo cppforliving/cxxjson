@@ -1,5 +1,6 @@
 #include "inc/cxx/cbor.hpp"
 #include "src/cbor/initial_byte.hpp"
+#include "src/codec.hpp"
 #include <algorithm>
 #include <list>
 #include <arpa/inet.h>
@@ -31,16 +32,16 @@ namespace
         return static_cast<std::int64_t>(bytes.front());
       },
       [](std::uint16_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        cxx::read_to(x, bytes);
-        return cxx::ntoh(x);
+        ::cxx::generic_codec::read_from(x, bytes);
+        return ::cxx::generic_codec::ntoh(x);
       },
       [](std::uint32_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        cxx::read_to(x, bytes);
-        return cxx::ntoh(x);
+        ::cxx::generic_codec::read_from(x, bytes);
+        return ::cxx::generic_codec::ntoh(x);
       },
       [](std::uint64_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        cxx::read_to(x, bytes);
-        x = cxx::ntoh(x);
+        ::cxx::generic_codec::read_from(x, bytes);
+        x = ::cxx::generic_codec::ntoh(x);
         if (x > std::numeric_limits<std::int64_t>::max())
           throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
         return static_cast<std::int64_t>(x);
@@ -50,8 +51,8 @@ namespace
     if (std::size(bytes) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     std::uint16_t x = 0;
-    cxx::read_to(x, bytes);
-    x = cxx::ntoh(x);
+    ::cxx::generic_codec::read_from(x, bytes);
+    x = ::cxx::generic_codec::ntoh(x);
     auto const halfbits_to_floatbits = [](std::uint16_t h) -> std::uint32_t {
       std::uint16_t h_exp, h_sig;
       std::uint32_t f_sgn, f_exp, f_sig;
@@ -335,8 +336,8 @@ namespace
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     T x = 0.0;
-    cxx::read_to(x, bytes);
-    double ret = cxx::ntoh(x);
+    ::cxx::generic_codec::read_from(x, bytes);
+    double ret = ::cxx::generic_codec::ntoh(x);
     sink(ret);
     bytes.remove_prefix(sizeof(T));
   };
