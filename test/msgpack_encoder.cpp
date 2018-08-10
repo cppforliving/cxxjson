@@ -19,7 +19,7 @@ TEST_CASE("msgpack can encode integers")
 {
   REQUIRE(msgpack::encode(0) == "00"_hex);
   REQUIRE(msgpack::encode(0x1f) == "1f"_hex);
-  REQUIRE(msgpack::encode(0x7f) == "cc7f"_hex);
+  REQUIRE(msgpack::encode(0x7f) == "7f"_hex);
   REQUIRE(msgpack::encode(0x8f) == "cc8f"_hex);
   REQUIRE(msgpack::encode(0xff) == "ccff"_hex);
   REQUIRE(msgpack::encode(0x100) == "cd0100"_hex);
@@ -42,7 +42,7 @@ TEST_CASE("msgpack can encode integers")
 
 TEST_CASE("msgpack can encode strings")
 {
-  REQUIRE(msgpack::encode("lorem") == "a56c6f72656d"_hex);
+  REQUIRE(msgpack::encode("lorem") == "d9056c6f72656d"_hex);
   REQUIRE(msgpack::encode("lorem ipsum dolor sit amet consectetur") ==
           "d9266c6f72656d20697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
 }
