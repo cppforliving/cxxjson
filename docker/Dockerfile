@@ -37,9 +37,9 @@ RUN pacman -Syy --noconfirm \
  && cd /tmp/libc++ \
  && su builder -c 'makepkg --nocheck --skippgpcheck' \
  && pacman --noconfirm -U \
-      /tmp/libc++/libc++-6.0.0-1-x86_64.pkg.tar.xz \
-      /tmp/libc++/libc++abi-6.0.0-1-x86_64.pkg.tar.xz \
-      /tmp/libc++/libc++experimental-6.0.0-1-x86_64.pkg.tar.xz \
+      /tmp/libc++/libc++-6.0.1-1-x86_64.pkg.tar.xz \
+      /tmp/libc++/libc++abi-6.0.1-1-x86_64.pkg.tar.xz \
+      /tmp/libc++/libc++experimental-6.0.1-1-x86_64.pkg.tar.xz \
  && rm -rf /tmp/libc++ \
  && pacman -Rns --noconfirm \
       cmake \
