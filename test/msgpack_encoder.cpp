@@ -13,8 +13,13 @@ TEST_CASE("msgpack can encode simple special values")
   REQUIRE(msgpack::encode(cxx::json::null) == "c0"_hex);
   REQUIRE(msgpack::encode(false) == "c2"_hex);
   REQUIRE(msgpack::encode(true) == "c3"_hex);
+}
+
+TEST_CASE("msgpack can encode integers")
+{
   REQUIRE(msgpack::encode(0) == "00"_hex);
-  REQUIRE(msgpack::encode(0x7f) == "7f"_hex);
+  REQUIRE(msgpack::encode(0x1f) == "1f"_hex);
+  REQUIRE(msgpack::encode(0x7f) == "cc7f"_hex);
   REQUIRE(msgpack::encode(0x8f) == "cc8f"_hex);
   REQUIRE(msgpack::encode(0xff) == "ccff"_hex);
   REQUIRE(msgpack::encode(0x100) == "cd0100"_hex);
@@ -32,4 +37,12 @@ TEST_CASE("msgpack can encode simple special values")
   REQUIRE(msgpack::encode(-0x8000) == "d18000"_hex);
   REQUIRE(msgpack::encode(-0x10000) == "d2ffff0000"_hex);
   REQUIRE(msgpack::encode(-0x80000000l) == "d280000000"_hex);
+  REQUIRE(msgpack::encode(-0x1000000000000000l) == "d3f000000000000000"_hex);
+}
+
+TEST_CASE("msgpack can encode strings")
+{
+  REQUIRE(msgpack::encode("lorem") == "a56c6f72656d"_hex);
+  REQUIRE(msgpack::encode("lorem ipsum dolor sit amet consectetur") ==
+          "d9266c6f72656d20697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
 }
