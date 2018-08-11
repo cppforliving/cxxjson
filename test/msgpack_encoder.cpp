@@ -46,3 +46,9 @@ TEST_CASE("msgpack can encode strings")
   REQUIRE(msgpack::encode("lorem ipsum dolor sit amet consectetur") ==
           "d9266c6f72656d20697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
 }
+
+TEST_CASE("msgpack can encode byte_stream")
+{
+  REQUIRE(msgpack::encode(""_hex) == "c400"_hex);
+  REQUIRE(msgpack::encode("0001020304"_hex) == "c4050001020304"_hex);
+}

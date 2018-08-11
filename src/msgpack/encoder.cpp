@@ -91,6 +91,15 @@ namespace
       stream.insert(std::end(stream), first, first + std::size(x));
     }
 
+    void encode(cxx::json::byte_stream const& x, cxx::json::byte_stream& stream)
+    {
+      ::cxx::generic_codec::assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
+      auto& init = assign(static_cast<std::int64_t>(std::size(x)), stream);
+      init = cxx::byte(static_cast<std::uint8_t>(init) - 0x8);
+      auto const first = x.data();
+      stream.insert(std::end(stream), first, first + std::size(x));
+    }
+
     void encode(cxx::json const& json, cxx::json::byte_stream& stream) noexcept
     {
       cxx::visit([&stream](auto const& x) { detail::encode(x, stream); }, json);
