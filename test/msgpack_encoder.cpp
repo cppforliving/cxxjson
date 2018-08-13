@@ -56,6 +56,6 @@ TEST_CASE("msgpack can encode byte_stream")
 TEST_CASE("msgpack can encode array")
 {
   REQUIRE(msgpack::encode(cxx::json::array()) == "dc0000"_hex);
-  REQUIRE(msgpack::encode(cxx::json::array({0})) == "dc000100"_hex);
-  REQUIRE(msgpack::encode(cxx::json::array({0, 0x8f, 0x100})) == "dc000300cc8fcd0100"_hex);
+  REQUIRE(msgpack::encode({0}) == "dc000100"_hex);
+  REQUIRE(msgpack::encode({0, 0x8f, 0x100}) == "dc000300cc8fcd0100"_hex);
 }
