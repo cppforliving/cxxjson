@@ -59,3 +59,9 @@ TEST_CASE("msgpack can encode array")
   REQUIRE(msgpack::encode({0}) == "dc000100"_hex);
   REQUIRE(msgpack::encode({0, 0x8f, 0x100}) == "dc000300cc8fcd0100"_hex);
 }
+
+TEST_CASE("msgpack can encode dictionaries")
+{
+  REQUIRE(msgpack::encode(cxx::json::dictionary()) == "de0000"_hex);
+  REQUIRE(msgpack::encode({"lorem"_key >> 0x8f}) == "de0001d9056c6f72656dcc8f"_hex);
+}

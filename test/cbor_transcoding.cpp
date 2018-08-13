@@ -68,7 +68,7 @@ TEST_CASE("cbor transcoding of arrays")
   assert_transcoding({0x00, "lorem", {"ipsum", 0xff}});
 }
 
-TEST_CASE("cbor transcoding of dictionaties")
+TEST_CASE("cbor transcoding of dictionaries")
 {
   auto const assert_transcoding = [](cxx::json::dictionary const& x) {
     REQUIRE(cbor::decode(cbor::encode(x)) == x);

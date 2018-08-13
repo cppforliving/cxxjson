@@ -197,7 +197,7 @@ TEST_CASE("cbor can decode arrays")
   }
 }
 
-TEST_CASE("cbor can decode dictionaties")
+TEST_CASE("cbor can decode dictionaries")
 {
   SECTION("can identify truncation erros")
   {
@@ -317,7 +317,7 @@ TEST_CASE("indefinite-length arrays")
                             14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}));
 }
 
-TEST_CASE("indefinite-lenght dictionaties")
+TEST_CASE("indefinite-lenght dictionaries")
 {
   REQUIRE_THROWS_AS(cbor::decode("bf"_hex), cbor::truncation_error);
   REQUIRE(cbor::decode("bfff"_hex) == cxx::json::dictionary());

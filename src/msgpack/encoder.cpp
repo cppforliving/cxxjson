@@ -105,11 +105,11 @@ namespace
 
     void encode(cxx::json::array const& x, cxx::json::byte_stream& stream)
     {
-      ::cxx::generic_codec::assure(stream, std::size(x) * sizeof(std::uint64_t));
       auto const size = std::size(x);
       auto const space = 1u << ::cxx::generic_codec::code(size);
       if (space > sizeof(std::uint32_t))
         throw cxx::msgpack::unsupported("array size exceeds max value");
+      ::cxx::generic_codec::assure(stream, size * sizeof(std::uint64_t));
 
       stream.emplace_back(cxx::byte(0));
       if (space > sizeof(std::uint16_t))
@@ -117,6 +117,26 @@ namespace
       else
         insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(0xdc);
       for (auto const& y : x) encode(y, stream);
+    }
+
+    void encode(cxx::json::dictionary const& x, cxx::json::byte_stream& stream)
+    {
+      auto const size = std::size(x);
+      auto const space = 1u << ::cxx::generic_codec::code(size);
+      if (space > sizeof(std::uint32_t))
+        throw cxx::msgpack::unsupported("array size exceeds max value");
+      ::cxx::generic_codec::assure(stream, 2 * size * sizeof(std::uint64_t));
+      stream.emplace_back(cxx::byte(0));
+      if (space > sizeof(std::uint16_t))
+        insert(static_cast<std::uint32_t>(size), stream) = cxx::byte(0xdf);
+      else
+        insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(0xde);
+
+      for (auto const& [key, value] : x)
+      {
+        encode(key, stream);
+        encode(value, stream);
+      }
     }
 
     void encode(cxx::json const& json, cxx::json::byte_stream& stream)
