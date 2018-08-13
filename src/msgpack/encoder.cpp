@@ -32,6 +32,23 @@ namespace
       return *(--it);
     };
 
+    auto const collect = [](auto const& x, auto& stream, auto code, auto sink) {
+      auto const size = std::size(x);
+      auto const space = 1u << ::cxx::generic_codec::code(size);
+      if (space > sizeof(std::uint32_t))
+        throw cxx::msgpack::unsupported("collection size exceeds max value");
+      using value_type = typename std::decay_t<decltype(x)>::value_type;
+      ::cxx::generic_codec::assure(stream, size * sizeof(value_type));
+
+      stream.emplace_back(cxx::byte(0));
+      if (space > sizeof(std::uint16_t))
+        insert(static_cast<std::uint32_t>(size), stream) = cxx::byte(code + 1);
+      else
+        insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(code);
+
+      sink(x, stream);
+    };
+
     void encode(cxx::json const&, cxx::json::byte_stream&);
 
     cxx::byte& assign(std::int64_t const x, cxx::json::byte_stream& stream)
@@ -105,38 +122,22 @@ namespace
 
     void encode(cxx::json::array const& x, cxx::json::byte_stream& stream)
     {
-      auto const size = std::size(x);
-      auto const space = 1u << ::cxx::generic_codec::code(size);
-      if (space > sizeof(std::uint32_t))
-        throw cxx::msgpack::unsupported("array size exceeds max value");
-      ::cxx::generic_codec::assure(stream, size * sizeof(std::uint64_t));
-
-      stream.emplace_back(cxx::byte(0));
-      if (space > sizeof(std::uint16_t))
-        insert(static_cast<std::uint32_t>(size), stream) = cxx::byte(0xdd);
-      else
-        insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(0xdc);
-      for (auto const& y : x) encode(y, stream);
+      auto const sink = [](auto const& y, auto& out) {
+        for (auto const& value : y) encode(value, out);
+      };
+      collect(x, stream, 0xdc, sink);
     }
 
     void encode(cxx::json::dictionary const& x, cxx::json::byte_stream& stream)
     {
-      auto const size = std::size(x);
-      auto const space = 1u << ::cxx::generic_codec::code(size);
-      if (space > sizeof(std::uint32_t))
-        throw cxx::msgpack::unsupported("array size exceeds max value");
-      ::cxx::generic_codec::assure(stream, 2 * size * sizeof(std::uint64_t));
-      stream.emplace_back(cxx::byte(0));
-      if (space > sizeof(std::uint16_t))
-        insert(static_cast<std::uint32_t>(size), stream) = cxx::byte(0xdf);
-      else
-        insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(0xde);
-
-      for (auto const& [key, value] : x)
-      {
-        encode(key, stream);
-        encode(value, stream);
-      }
+      auto const sink = [](auto const& y, auto& out) {
+        for (auto const& [key, value] : y)
+        {
+          encode(key, out);
+          encode(value, out);
+        }
+      };
+      collect(x, stream, 0xde, sink);
     }
 
     void encode(cxx::json const& json, cxx::json::byte_stream& stream)
