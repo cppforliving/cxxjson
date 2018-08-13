@@ -23,6 +23,17 @@ namespace
       constexpr static std::int64_t const max_initial = 0x7f;
       constexpr static std::int64_t const min_initial = -0x20;
     };
+
+    auto const insert = [](auto x, auto& stream) -> decltype(auto) {
+      using T = std::decay_t<decltype(x)>;
+      auto it = stream.insert(std::end(stream), sizeof(T), {});
+      ::cxx::generic_codec::write_to(::cxx::generic_codec::hton(static_cast<T>(x)),
+                                     std::addressof(*it));
+      return *(--it);
+    };
+
+    void encode(cxx::json const&, cxx::json::byte_stream&);
+
     cxx::byte& assign(std::int64_t const x, cxx::json::byte_stream& stream)
     {
       auto const code =
@@ -31,26 +42,18 @@ namespace
       ::cxx::generic_codec::assure(stream, sizeof(cxx::byte) + space);
       stream.emplace_back(cxx::byte(code + ((x < 0) ? consts::negative : consts::positive)));
 
-      auto const write = [&x, &stream](auto t) -> decltype(auto) {
-        using T = std::decay_t<decltype(t)>;
-        auto it = stream.insert(std::end(stream), sizeof(T), {});
-        ::cxx::generic_codec::write_to(::cxx::generic_codec::hton(static_cast<T>(x)),
-                                       std::addressof(*it));
-        return *(--it);
-      };
-
       /// space optimization - adjust number of bytes needed to store a value
       /// is it really needed? use 8-bytes allways instead
       switch (space)
       {
         case sizeof(std::uint8_t):
-          return write(std::uint8_t{});
+          return insert(static_cast<std::uint8_t>(x), stream);
         case sizeof(std::uint16_t):
-          return write(std::uint16_t{});
+          return insert(static_cast<std::uint16_t>(x), stream);
         case sizeof(std::uint32_t):
-          return write(std::uint32_t{});
+          return insert(static_cast<std::uint32_t>(x), stream);
         default:
-          return write(std::uint64_t{});
+          return insert(static_cast<std::uint64_t>(x), stream);
       }
     }
 
@@ -100,14 +103,30 @@ namespace
       stream.insert(std::end(stream), first, first + std::size(x));
     }
 
-    void encode(cxx::json const& json, cxx::json::byte_stream& stream) noexcept
+    void encode(cxx::json::array const& x, cxx::json::byte_stream& stream)
+    {
+      ::cxx::generic_codec::assure(stream, std::size(x) * sizeof(std::uint64_t));
+      auto const size = std::size(x);
+      auto const space = 1u << ::cxx::generic_codec::code(size);
+      if (space > sizeof(std::uint32_t))
+        throw cxx::msgpack::unsupported("array size exceeds max value");
+
+      stream.emplace_back(cxx::byte(0));
+      if (space > sizeof(std::uint16_t))
+        insert(static_cast<std::uint32_t>(size), stream) = cxx::byte(0xdd);
+      else
+        insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(0xdc);
+      for (auto const& y : x) encode(y, stream);
+    }
+
+    void encode(cxx::json const& json, cxx::json::byte_stream& stream)
     {
       cxx::visit([&stream](auto const& x) { detail::encode(x, stream); }, json);
     }
   } // namespace detail
 } // namespace
 
-auto ::cxx::msgpack::encode(json const& obj) noexcept -> json::byte_stream
+auto ::cxx::msgpack::encode(json const& obj) -> json::byte_stream
 {
   auto stream = reserved<json::byte_stream>(sizeof(json));
   detail::encode(obj, stream);

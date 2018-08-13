@@ -47,7 +47,7 @@ namespace cxx
     /*
      *
      */
-    static json::byte_stream encode(json const&) noexcept;
+    static json::byte_stream encode(json const&);
 
     /*
      *
