@@ -65,3 +65,8 @@ TEST_CASE("msgpack can encode dictionaries")
   REQUIRE(msgpack::encode(cxx::json::dictionary()) == "de0000"_hex);
   REQUIRE(msgpack::encode({"lorem"_key >> 0x8f}) == "de0001d9056c6f72656dcc8f"_hex);
 }
+
+TEST_CASE("msgpack can encode doubles")
+{
+  REQUIRE(msgpack::encode(3.14) == "cb40091eb851eb851f"_hex);
+}

@@ -74,12 +74,6 @@ namespace
       }
     }
 
-    template <typename T>
-    void encode(T const&, cxx::json::byte_stream&)
-    {
-      throw cxx::msgpack::unsupported("encoding is not yet supported");
-    }
-
     cxx::byte& encode(std::int64_t x, cxx::json::byte_stream& stream)
     {
       auto const initial_byte = [&x, &stream] {
@@ -138,6 +132,15 @@ namespace
         }
       };
       collect(x, stream, 0xde, sink);
+    }
+
+    void encode(double x, cxx::json::byte_stream& stream)
+    {
+      ::cxx::generic_codec::assure(stream, sizeof(double) + 1);
+      x = ::cxx::generic_codec::hton(x);
+      auto const* first = static_cast<cxx::byte const*>(static_cast<void const*>(&x));
+      stream.emplace_back(cxx::byte(0xcb));
+      stream.insert(std::end(stream), first, first + sizeof(double));
     }
 
     void encode(cxx::json const& json, cxx::json::byte_stream& stream)
