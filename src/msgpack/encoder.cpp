@@ -20,8 +20,10 @@ namespace
       constexpr static type const positive = 0xcc;
       constexpr static type const negative = 0xd0;
       constexpr static type const negative_initial = 0xe0;
-      constexpr static type const array = 0xdc;
-      constexpr static type const dictionary = 0xde;
+      constexpr static type const string = 0xdb;
+      constexpr static type const bin = 0xc6;
+      constexpr static type const array = 0xdd;
+      constexpr static type const dictionary = 0xdf;
       constexpr static type const floating = 0xcb;
       constexpr static std::int64_t const max_initial = 0x7f;
       constexpr static std::int64_t const min_initial = -0x20;
@@ -37,18 +39,13 @@ namespace
 
     auto const collect = [](auto const& x, auto& stream, auto code, auto sink) {
       auto const size = std::size(x);
-      auto const space = 1u << ::cxx::generic_codec::code(size);
-      if (space > sizeof(std::uint32_t))
+      if (size > std::numeric_limits<std::uint32_t>::max())
         throw cxx::msgpack::unsupported("collection size exceeds max value");
       using value_type = typename std::decay_t<decltype(x)>::value_type;
-      ::cxx::generic_codec::assure(stream, size * sizeof(value_type));
+      ::cxx::generic_codec::assure(stream, size * sizeof(value_type) + sizeof(std::uint32_t) + 1);
 
-      stream.emplace_back(cxx::byte(0));
-      if (space > sizeof(std::uint16_t))
-        insert(static_cast<std::uint32_t>(size), stream) = cxx::byte(code + 1);
-      else
-        insert(static_cast<std::uint16_t>(size), stream) = cxx::byte(code);
-
+      stream.emplace_back(cxx::byte(code));
+      insert(static_cast<std::uint32_t>(size), stream);
       sink(x, stream);
     };
 
@@ -101,20 +98,20 @@ namespace
 
     void encode(std::string const& x, cxx::json::byte_stream& stream)
     {
-      ::cxx::generic_codec::assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
-      auto& init = assign(static_cast<std::int64_t>(std::size(x)), stream);
-      init = cxx::byte(static_cast<std::uint8_t>(init) + 0xd);
-      auto const first = reinterpret_cast<cxx::byte const*>(x.data());
-      stream.insert(std::end(stream), first, first + std::size(x));
+      auto const sink = [](auto const& y, auto& out) {
+        auto const first = reinterpret_cast<cxx::byte const*>(y.data());
+        out.insert(std::end(out), first, first + std::size(y));
+      };
+      collect(x, stream, consts::string, sink);
     }
 
     void encode(cxx::json::byte_stream const& x, cxx::json::byte_stream& stream)
     {
-      ::cxx::generic_codec::assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
-      auto& init = assign(static_cast<std::int64_t>(std::size(x)), stream);
-      init = cxx::byte(static_cast<std::uint8_t>(init) - 0x8);
-      auto const first = x.data();
-      stream.insert(std::end(stream), first, first + std::size(x));
+      auto const sink = [](auto const& y, auto& out) {
+        auto const first = y.data();
+        out.insert(std::end(out), first, first + std::size(y));
+      };
+      collect(x, stream, consts::bin, sink);
     }
 
     void encode(cxx::json::array const& x, cxx::json::byte_stream& stream)

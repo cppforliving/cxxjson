@@ -42,28 +42,29 @@ TEST_CASE("msgpack can encode integers")
 
 TEST_CASE("msgpack can encode strings")
 {
-  REQUIRE(msgpack::encode("lorem") == "d9056c6f72656d"_hex);
-  REQUIRE(msgpack::encode("lorem ipsum dolor sit amet consectetur") ==
-          "d9266c6f72656d20697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
+  REQUIRE(msgpack::encode("lorem") == "db000000056c6f72656d"_hex);
+  REQUIRE(
+      msgpack::encode("lorem ipsum dolor sit amet consectetur") ==
+      "db000000266c6f72656d20697073756d20646f6c6f722073697420616d657420636f6e7365637465747572"_hex);
 }
 
 TEST_CASE("msgpack can encode byte_stream")
 {
-  REQUIRE(msgpack::encode(""_hex) == "c400"_hex);
-  REQUIRE(msgpack::encode("0001020304"_hex) == "c4050001020304"_hex);
+  REQUIRE(msgpack::encode(""_hex) == "c600000000"_hex);
+  REQUIRE(msgpack::encode("0001020304"_hex) == "c6000000050001020304"_hex);
 }
 
 TEST_CASE("msgpack can encode array")
 {
-  REQUIRE(msgpack::encode(cxx::json::array()) == "dc0000"_hex);
-  REQUIRE(msgpack::encode({0}) == "dc000100"_hex);
-  REQUIRE(msgpack::encode({0, 0x8f, 0x100}) == "dc000300cc8fcd0100"_hex);
+  REQUIRE(msgpack::encode(cxx::json::array()) == "dd00000000"_hex);
+  REQUIRE(msgpack::encode({0}) == "dd0000000100"_hex);
+  REQUIRE(msgpack::encode({0, 0x8f, 0x100}) == "dd0000000300cc8fcd0100"_hex);
 }
 
 TEST_CASE("msgpack can encode dictionaries")
 {
-  REQUIRE(msgpack::encode(cxx::json::dictionary()) == "de0000"_hex);
-  REQUIRE(msgpack::encode({"lorem"_key >> 0x8f}) == "de0001d9056c6f72656dcc8f"_hex);
+  REQUIRE(msgpack::encode(cxx::json::dictionary()) == "df00000000"_hex);
+  REQUIRE(msgpack::encode({"lorem"_key >> 0x8f}) == "df00000001db000000056c6f72656dcc8f"_hex);
 }
 
 TEST_CASE("msgpack can encode doubles")
