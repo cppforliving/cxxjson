@@ -20,6 +20,9 @@ namespace
       constexpr static type const positive = 0xcc;
       constexpr static type const negative = 0xd0;
       constexpr static type const negative_initial = 0xe0;
+      constexpr static type const array = 0xdc;
+      constexpr static type const dictionary = 0xde;
+      constexpr static type const floating = 0xcb;
       constexpr static std::int64_t const max_initial = 0x7f;
       constexpr static std::int64_t const min_initial = -0x20;
     };
@@ -119,7 +122,7 @@ namespace
       auto const sink = [](auto const& y, auto& out) {
         for (auto const& value : y) encode(value, out);
       };
-      collect(x, stream, 0xdc, sink);
+      collect(x, stream, consts::array, sink);
     }
 
     void encode(cxx::json::dictionary const& x, cxx::json::byte_stream& stream)
@@ -131,7 +134,7 @@ namespace
           encode(value, out);
         }
       };
-      collect(x, stream, 0xde, sink);
+      collect(x, stream, consts::dictionary, sink);
     }
 
     void encode(double x, cxx::json::byte_stream& stream)
@@ -139,7 +142,7 @@ namespace
       ::cxx::generic_codec::assure(stream, sizeof(double) + 1);
       x = ::cxx::generic_codec::hton(x);
       auto const* first = static_cast<cxx::byte const*>(static_cast<void const*>(&x));
-      stream.emplace_back(cxx::byte(0xcb));
+      stream.emplace_back(cxx::byte(consts::floating));
       stream.insert(std::end(stream), first, first + sizeof(double));
     }
 
