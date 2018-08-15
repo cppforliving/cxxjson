@@ -21,10 +21,10 @@ namespace
   template <typename T>
   constexpr bool has_reserve_v = has_reserve<T>::value;
 
-  using initial_byte = cxx::codec::cbor::initial_byte;
-  template <cxx::codec::cbor::base_type<cxx::byte> t>
-  using tag_t = std::integral_constant<cxx::codec::cbor::base_type<cxx::byte>, t>;
-  template <cxx::codec::cbor::base_type<cxx::byte> t>
+  using initial_byte = cxx::detail::cbor::initial_byte;
+  template <::cxx::codec::base_type<cxx::byte> t>
+  using tag_t = std::integral_constant<::cxx::codec::base_type<cxx::byte>, t>;
+  template <::cxx::codec::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
 
   constexpr auto const ntohb = cxx::overload(
@@ -32,16 +32,16 @@ namespace
         return static_cast<std::int64_t>(bytes.front());
       },
       [](std::uint16_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        ::cxx::generic_codec::read_from(x, bytes);
-        return ::cxx::generic_codec::ntoh(x);
+        ::cxx::codec::read_from(x, bytes);
+        return ::cxx::codec::ntoh(x);
       },
       [](std::uint32_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        ::cxx::generic_codec::read_from(x, bytes);
-        return ::cxx::generic_codec::ntoh(x);
+        ::cxx::codec::read_from(x, bytes);
+        return ::cxx::codec::ntoh(x);
       },
       [](std::uint64_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        ::cxx::generic_codec::read_from(x, bytes);
-        x = ::cxx::generic_codec::ntoh(x);
+        ::cxx::codec::read_from(x, bytes);
+        x = ::cxx::codec::ntoh(x);
         if (x > std::numeric_limits<std::int64_t>::max())
           throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
         return static_cast<std::int64_t>(x);
@@ -51,8 +51,8 @@ namespace
     if (std::size(bytes) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     std::uint16_t x = 0;
-    ::cxx::generic_codec::read_from(x, bytes);
-    x = ::cxx::generic_codec::ntoh(x);
+    ::cxx::codec::read_from(x, bytes);
+    x = ::cxx::codec::ntoh(x);
     auto const halfbits_to_floatbits = [](std::uint16_t h) -> std::uint32_t {
       std::uint16_t h_exp, h_sig;
       std::uint32_t f_sgn, f_exp, f_sig;
@@ -116,7 +116,7 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    auto const additional = cxx::codec::cbor::initial(byte)->additional;
+    auto const additional = cxx::detail::cbor::initial(byte)->additional;
     if (additional <= initial_byte::value::max_insitu)
     {
       sink(static_cast<std::int64_t>(additional));
@@ -170,7 +170,7 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
+    if (cxx::detail::cbor::initial(byte)->additional == initial_byte::value::indefinite)
     {
       auto const sentinel = [](auto const& data) {
         if (std::empty(data))
@@ -265,7 +265,7 @@ namespace
   {
     if (--level == 0) throw cxx::cbor::unsupported("nesting level exceeds implementation limit");
     Collection col;
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
+    if (cxx::detail::cbor::initial(byte)->additional == initial_byte::value::indefinite)
     {
       auto const sentinel = [](cxx::json::byte_view data) {
         if (std::empty(data))
@@ -320,7 +320,7 @@ namespace
         throw cxx::cbor::truncation_error("not enough data to decode dictionary key");
       auto const init = data.front();
       data.remove_prefix(1);
-      if (cxx::codec::cbor::initial(init)->major != initial_byte::type::unicode)
+      if (cxx::detail::cbor::initial(init)->major != initial_byte::type::unicode)
         throw cxx::cbor::unsupported(
             "dictionary keys of type different thant unicode are not supported");
       std::string_view key;
@@ -336,8 +336,8 @@ namespace
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     T x = 0.0;
-    ::cxx::generic_codec::read_from(x, bytes);
-    double ret = ::cxx::generic_codec::ntoh(x);
+    ::cxx::codec::read_from(x, bytes);
+    double ret = ::cxx::codec::ntoh(x);
     sink(ret);
     bytes.remove_prefix(sizeof(T));
   };
@@ -349,7 +349,7 @@ namespace
                              Sink sink)
   {
     auto const simple_value = [sink](cxx::byte v) {
-      auto const x = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(v);
+      auto const x = static_cast<::cxx::codec::base_type<cxx::byte>>(v);
       switch (x)
       {
         case initial_byte::value::False:
@@ -365,7 +365,7 @@ namespace
           throw cxx::cbor::unsupported("decoding given type is not yet supported");
       }
     };
-    auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
+    auto const value = static_cast<::cxx::codec::base_type<cxx::byte>>(byte);
     switch (value)
     {
       case initial_byte::value::False:
@@ -404,7 +404,7 @@ namespace
     if (bytes.empty()) throw cxx::cbor::truncation_error("not enough data to decode json");
     auto const byte = bytes.front();
     bytes.remove_prefix(1);
-    switch (cxx::codec::cbor::initial(byte)->major)
+    switch (cxx::detail::cbor::initial(byte)->major)
     {
       case initial_byte::type::positive:
         return parse(tag<initial_byte::type::positive>, byte, bytes, sink);

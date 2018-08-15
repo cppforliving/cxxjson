@@ -3,17 +3,10 @@
 
 namespace
 {
-  template <typename T>
-  auto const reserved = [](typename T::size_type capa) -> T {
-    T ret;
-    ret.reserve(capa);
-    return ret;
-  };
-
   namespace detail
   {
     struct consts {
-      using type = std::uint8_t;
+      using type = ::cxx::codec::base_type<::cxx::byte>;
       constexpr static type const null = 0xc0;
       constexpr static type const False = 0xc2;
       constexpr static type const True = 0xc3;
@@ -32,8 +25,7 @@ namespace
     auto const insert = [](auto x, auto& stream) -> decltype(auto) {
       using T = std::decay_t<decltype(x)>;
       auto it = stream.insert(std::end(stream), sizeof(T), {});
-      ::cxx::generic_codec::write_to(::cxx::generic_codec::hton(static_cast<T>(x)),
-                                     std::addressof(*it));
+      ::cxx::codec::write_to(::cxx::codec::hton(static_cast<T>(x)), std::addressof(*it));
       return *(--it);
     };
 
@@ -42,7 +34,7 @@ namespace
       if (size > std::numeric_limits<std::uint32_t>::max())
         throw cxx::msgpack::unsupported("collection size exceeds max value");
       using value_type = typename std::decay_t<decltype(x)>::value_type;
-      ::cxx::generic_codec::assure(stream, size * sizeof(value_type) + sizeof(std::uint32_t) + 1);
+      ::cxx::codec::assure(stream, size * sizeof(value_type) + sizeof(std::uint32_t) + 1);
 
       stream.emplace_back(cxx::byte(code));
       insert(static_cast<std::uint32_t>(size), stream);
@@ -53,10 +45,9 @@ namespace
 
     cxx::byte& assign(std::int64_t const x, cxx::json::byte_stream& stream)
     {
-      auto const code =
-          ::cxx::generic_codec::code(static_cast<std::uint64_t>((x < 0) ? (~x + 1) : x));
+      auto const code = ::cxx::codec::code(static_cast<std::uint64_t>((x < 0) ? (~x + 1) : x));
       auto const space = 1u << code;
-      ::cxx::generic_codec::assure(stream, sizeof(cxx::byte) + space);
+      ::cxx::codec::assure(stream, sizeof(cxx::byte) + space);
       stream.emplace_back(cxx::byte(code + ((x < 0) ? consts::negative : consts::positive)));
 
       /// space optimization - adjust number of bytes needed to store a value
@@ -136,8 +127,8 @@ namespace
 
     void encode(double x, cxx::json::byte_stream& stream)
     {
-      ::cxx::generic_codec::assure(stream, sizeof(double) + 1);
-      x = ::cxx::generic_codec::hton(x);
+      ::cxx::codec::assure(stream, sizeof(double) + 1);
+      x = ::cxx::codec::hton(x);
       auto const* first = static_cast<cxx::byte const*>(static_cast<void const*>(&x));
       stream.emplace_back(cxx::byte(consts::floating));
       stream.insert(std::end(stream), first, first + sizeof(double));
@@ -152,7 +143,7 @@ namespace
 
 auto ::cxx::msgpack::encode(json const& obj) -> json::byte_stream
 {
-  auto stream = reserved<json::byte_stream>(sizeof(json));
+  auto stream = ::cxx::codec::reserved<json::byte_stream>(sizeof(json));
   detail::encode(obj, stream);
   return stream;
 }

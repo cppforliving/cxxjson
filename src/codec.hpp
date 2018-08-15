@@ -4,7 +4,7 @@
 
 namespace cxx
 {
-  struct generic_codec {
+  struct codec {
     /**
      *
      */
@@ -143,6 +143,34 @@ namespace cxx
       auto const* first =
           static_cast<cxx::json::byte_stream::const_pointer>(static_cast<void const*>(&t));
       std::copy(first, first + sizeof(t), dest);
+    };
+
+    /**
+     *
+     */
+    template <typename T>
+    static constexpr auto const base_type_impl = [] {
+      if constexpr (std::is_enum_v<T>) { return std::underlying_type_t<T>{}; }
+      else
+      {
+        return T{};
+      }
+    };
+
+    /**
+     *
+     */
+    template <typename T>
+    using base_type = std::decay_t<decltype(base_type_impl<T>())>;
+
+    /**
+     *
+     */
+    template <typename T>
+    static constexpr auto const reserved = [](typename T::size_type capa) -> T {
+      T ret;
+      ret.reserve(capa);
+      return ret;
     };
   };
 } // namespace cxx
