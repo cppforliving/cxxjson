@@ -8,6 +8,11 @@ namespace cxx
     /**
      *
      */
+    static constexpr std::size_t const max_nesting = 0x3f;
+
+    /**
+     *
+     */
     static constexpr auto const sum = [](auto const&... x) -> decltype(auto) { return (x + ...); };
 
     /**
