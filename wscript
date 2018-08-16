@@ -19,7 +19,6 @@ def init(ctx):
 def options(ctx):
     ctx.load('compiler_cxx')
     ctx.load('gnu_dirs')
-    ctx.load('use_config')
     ctx.load('waf_unit_test')
 
 
