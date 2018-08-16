@@ -25,38 +25,56 @@ namespace
     };
   };
 
+  template <bool isSigned, typename T>
+  using Int = std::conditional_t<isSigned, std::make_signed_t<T>, std::make_unsigned_t<T>>;
+
+  template <bool isSigned>
+  auto read_int64_t(std::size_t const space, cxx::json::byte_view const bytes)
+      -> Int<isSigned, std::int64_t>
+  {
+    if (std::size(bytes) < space)
+      throw cxx::msgpack::truncation_error("not enough data to decode json");
+    switch (space)
+    {
+      case sizeof(std::int8_t):
+        return static_cast<Int<isSigned, std::int8_t>>(
+            ::cxx::codec::nbtoh<sizeof(std::int8_t)>(bytes));
+      case sizeof(std::int16_t):
+        return static_cast<Int<isSigned, std::int16_t>>(
+            ::cxx::codec::nbtoh<sizeof(std::int16_t)>(bytes));
+      case sizeof(std::int32_t):
+        return static_cast<Int<isSigned, std::int32_t>>(
+            ::cxx::codec::nbtoh<sizeof(std::int32_t)>(bytes));
+      case sizeof(std::int64_t):
+        return static_cast<Int<isSigned, std::int64_t>>(
+            ::cxx::codec::nbtoh<sizeof(std::int64_t)>(bytes));
+      default:
+        throw ::cxx::msgpack::data_error("invalid integer code");
+    }
+  }
+
   template <typename T, typename Sink>
   cxx::json::byte_view parse(cxx::codec::numbyte const init,
                              cxx::json::byte_view const bytes,
                              Sink sink,
                              std::size_t const /*level*/)
   {
-    if constexpr (std::is_same_v<T, std::int64_t>)
+    if constexpr (std::is_same_v<T, std::uint64_t>)
     {
-      std::size_t const space = 1 << (init - 0xcc);
-      if (std::size(bytes) < space)
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      std::uint64_t x = 0;
-      switch (space)
-      {
-        case sizeof(std::uint8_t):
-          x = ::cxx::codec::nbtoh<sizeof(std::uint8_t)>(bytes);
-          break;
-        case sizeof(std::uint16_t):
-          x = ::cxx::codec::nbtoh<sizeof(std::uint16_t)>(bytes);
-          break;
-        case sizeof(std::uint32_t):
-          x = ::cxx::codec::nbtoh<sizeof(std::uint32_t)>(bytes);
-          break;
-        case sizeof(std::uint64_t):
-          x = ::cxx::codec::nbtoh<sizeof(std::uint64_t)>(bytes);
-          break;
-        default:
-          throw ::cxx::msgpack::data_error("invalid integer code");
-      }
+      auto const space = 1u << (init - 0xcc);
+      auto const x = read_int64_t<false>(space, bytes);
       if (x > std::numeric_limits<std::int64_t>::max())
         throw cxx::msgpack::unsupported("integer value bigger than std::int64_t max");
       sink(static_cast<std::int64_t>(x));
+      return bytes.substr(space);
+    }
+    if constexpr (std::is_same_v<T, std::int64_t>)
+    {
+      auto const space = 1u << (init - 0xd0);
+      if (std::size(bytes) < space)
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      std::int64_t x = read_int64_t<true>(space, bytes);
+      sink(x);
       return bytes.substr(space);
     }
     else
@@ -82,6 +100,11 @@ namespace
       case 0xcd:
       case 0xce:
       case 0xcf:
+        return parse<std::uint64_t>(init, bytes.substr(1), sink, level);
+      case 0xd0:
+      case 0xd1:
+      case 0xd2:
+      case 0xd3:
         return parse<std::int64_t>(init, bytes.substr(1), sink, level);
       default:
         throw cxx::msgpack::unsupported("decoding given type is not yet supported");
