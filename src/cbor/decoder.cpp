@@ -27,26 +27,6 @@ namespace
   template <::cxx::codec::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
 
-  constexpr auto const ntohb = cxx::overload(
-      [](std::uint8_t, cxx::json::byte_view bytes) -> std::int64_t {
-        return static_cast<std::int64_t>(bytes.front());
-      },
-      [](std::uint16_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        ::cxx::codec::read_from(x, bytes);
-        return ::cxx::codec::ntoh(x);
-      },
-      [](std::uint32_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        ::cxx::codec::read_from(x, bytes);
-        return ::cxx::codec::ntoh(x);
-      },
-      [](std::uint64_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        ::cxx::codec::read_from(x, bytes);
-        x = ::cxx::codec::ntoh(x);
-        if (x > std::numeric_limits<std::int64_t>::max())
-          throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
-        return static_cast<std::int64_t>(x);
-      });
-
   auto const read_half_float = [](cxx::json::byte_view& bytes, auto sink) {
     if (std::size(bytes) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
@@ -100,13 +80,15 @@ namespace
   template <typename Sink>
   cxx::json::byte_view parse(cxx::json::byte_view, Sink, std::size_t = cxx::cbor::max_nesting);
 
-  template <typename Int, typename Sink>
-  cxx::json::byte_view parse(Int, cxx::json::byte_view bytes, Sink sink)
+  template <std::size_t S, typename Sink>
+  cxx::json::byte_view parse(cxx::json::byte_view bytes, Sink sink)
   {
-    if (std::size(bytes) < sizeof(Int))
-      throw cxx::cbor::truncation_error("not enough data to decode json");
-    sink(ntohb(Int{}, bytes));
-    bytes.remove_prefix(sizeof(Int));
+    if (std::size(bytes) < S) throw cxx::cbor::truncation_error("not enough data to decode json");
+    auto n = ::cxx::codec::nbtoh<S>(bytes);
+    if (n > std::numeric_limits<std::int64_t>::max())
+      throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
+    sink(static_cast<std::int64_t>(n));
+    bytes.remove_prefix(S);
     return bytes;
   }
 
@@ -125,13 +107,13 @@ namespace
     switch (additional)
     {
       case initial_byte::value::one_byte:
-        return parse(std::uint8_t{0}, bytes, sink);
+        return parse<sizeof(std::uint8_t)>(bytes, sink);
       case initial_byte::value::two_bytes:
-        return parse(std::uint16_t{0}, bytes, sink);
+        return parse<sizeof(std::uint16_t)>(bytes, sink);
       case initial_byte::value::four_bytes:
-        return parse(std::uint32_t{0}, bytes, sink);
+        return parse<sizeof(std::uint32_t)>(bytes, sink);
       case initial_byte::value::eigth_bytes:
-        return parse(std::uint64_t{0}, bytes, sink);
+        return parse<sizeof(std::uint64_t)>(bytes, sink);
       default:
         throw cxx::cbor::data_error("meaningless additional data in initial byte");
     }

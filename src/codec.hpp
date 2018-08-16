@@ -168,6 +168,11 @@ namespace cxx
     template <typename T>
     using base_type = std::decay_t<decltype(base_type_impl<T>())>;
 
+    /*
+     *
+     */
+    using numbyte = base_type<cxx::byte>;
+
     /**
      *
      */
@@ -176,6 +181,29 @@ namespace cxx
       T ret;
       ret.reserve(capa);
       return ret;
+    };
+
+    template <std::size_t S>
+    static constexpr auto const nbtoh = [](cxx::json::byte_view bytes) -> std::uint64_t {
+      if constexpr (S == sizeof(std::uint8_t)) { return static_cast<std::uint64_t>(bytes.front()); }
+      else if constexpr (S == sizeof(std::uint16_t))
+      {
+        std::uint16_t x;
+        read_from(x, bytes);
+        return ntoh(x);
+      }
+      else if constexpr (S == sizeof(std::uint32_t))
+      {
+        std::uint32_t x;
+        read_from(x, bytes);
+        return ntoh(x);
+      }
+      else if constexpr (S == sizeof(std::uint64_t))
+      {
+        std::uint64_t x;
+        read_from(x, bytes);
+        return ntoh(x);
+      }
     };
   };
 } // namespace cxx
