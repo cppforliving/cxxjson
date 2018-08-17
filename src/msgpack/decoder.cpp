@@ -45,11 +45,9 @@ namespace
       case sizeof(std::int32_t):
         return static_cast<Int<isSigned, std::int32_t>>(
             ::cxx::codec::nbtoh<sizeof(std::int32_t)>(bytes));
-      case sizeof(std::int64_t):
+      default:
         return static_cast<Int<isSigned, std::int64_t>>(
             ::cxx::codec::nbtoh<sizeof(std::int64_t)>(bytes));
-      default:
-        throw ::cxx::msgpack::data_error("invalid integer code");
     }
   }
 
