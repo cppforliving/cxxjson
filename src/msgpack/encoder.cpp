@@ -45,7 +45,8 @@ namespace
 
     cxx::byte& assign(std::int64_t const x, cxx::json::byte_stream& stream)
     {
-      auto const code = ::cxx::codec::code(static_cast<std::uint64_t>((x < 0) ? (~x + 1) : x));
+      auto const code = ::cxx::codec::code(
+          static_cast<std::uint64_t>((x < 0) ? (~static_cast<std::uint64_t>(x) + 1) : x));
       auto const space = 1u << code;
       ::cxx::codec::assure(stream, sizeof(cxx::byte) + space);
       stream.emplace_back(cxx::byte(code + ((x < 0) ? consts::negative : consts::positive)));

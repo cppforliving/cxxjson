@@ -38,6 +38,7 @@ TEST_CASE("msgpack can encode integers")
   REQUIRE(msgpack::encode(-0x10000) == "d2ffff0000"_hex);
   REQUIRE(msgpack::encode(-0x80000000l) == "d280000000"_hex);
   REQUIRE(msgpack::encode(-0x1000000000000000l) == "d3f000000000000000"_hex);
+  REQUIRE(msgpack::encode(std::numeric_limits<std::int64_t>::min()) == "d38000000000000000"_hex);
 }
 
 TEST_CASE("msgpack can encode strings")
