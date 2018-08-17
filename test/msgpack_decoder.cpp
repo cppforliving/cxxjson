@@ -10,9 +10,6 @@ using msgpack = cxx::msgpack;
 
 TEST_CASE("msgpack throws exception on unsupported tag")
 {
-  REQUIRE_THROWS_AS(msgpack::decode("c0"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("c2"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("c3"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("c4"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("c5"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("c6"_hex), msgpack::unsupported);
@@ -104,4 +101,11 @@ TEST_CASE("msgpack can decode integers")
     REQUIRE(msgpack::decode(leftovers) == -0x7001);
     REQUIRE(std::size(leftovers) == 1);
   }
+}
+
+TEST_CASE("msgpack can decode simple values")
+{
+  REQUIRE(msgpack::decode("c0"_hex) == cxx::json::null);
+  REQUIRE(msgpack::decode("c2"_hex) == false);
+  REQUIRE(msgpack::decode("c3"_hex) == true);
 }

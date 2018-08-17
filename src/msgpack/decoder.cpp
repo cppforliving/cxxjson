@@ -96,6 +96,15 @@ namespace
     }
     switch (init)
     {
+      case 0xc0:
+        sink(cxx::json::null);
+        return bytes.substr(1);
+      case 0xc2:
+        sink(false);
+        return bytes.substr(1);
+      case 0xc3:
+        sink(true);
+        return bytes.substr(1);
       case 0xcc:
       case 0xcd:
       case 0xce:
