@@ -67,6 +67,9 @@ TEST_CASE("msgpack can decode integers")
   REQUIRE(msgpack::decode("cf1fffffffffffffff"_hex) == 0x1fffffffffffffff);
   REQUIRE(msgpack::decode("cf7fffffffffffffff"_hex) == std::numeric_limits<std::int64_t>::max());
 
+  REQUIRE(msgpack::decode("e0"_hex) == -0x20);
+  REQUIRE(msgpack::decode("ef"_hex) == -0x11);
+  REQUIRE(msgpack::decode("ff"_hex) == -0x01);
   REQUIRE(msgpack::decode("d000"_hex) == 0x00);
   REQUIRE(msgpack::decode("d001"_hex) == 0x01);
   REQUIRE(msgpack::decode("d080"_hex) == -0x80);
@@ -90,4 +93,15 @@ TEST_CASE("msgpack can decode integers")
   REQUIRE(msgpack::decode("d38000000000000000"_hex) == std::numeric_limits<std::int64_t>::min());
   REQUIRE(msgpack::decode("d38fffffffffffffff"_hex) == -0x7000000000000001l);
   REQUIRE(msgpack::decode("d3ffffffffffffffff"_hex) == -0x01);
+
+  SECTION("leftovers")
+  {
+    auto const bytes = "ef7fcdff77d18fff00"_hex;
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(msgpack::decode(leftovers) == -0x11);
+    REQUIRE(msgpack::decode(leftovers) == 0x7f);
+    REQUIRE(msgpack::decode(leftovers) == 0xff77);
+    REQUIRE(msgpack::decode(leftovers) == -0x7001);
+    REQUIRE(std::size(leftovers) == 1);
+  }
 }

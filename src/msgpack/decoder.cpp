@@ -89,7 +89,12 @@ namespace
     if (init < 0x80)
     {
       sink(static_cast<std::int64_t>(init));
-      return bytes;
+      return bytes.substr(1);
+    }
+    if (init >= 0xe0)
+    {
+      sink(static_cast<std::int64_t>(static_cast<std::int8_t>(init)));
+      return bytes.substr(1);
     }
     switch (init)
     {
