@@ -65,6 +65,7 @@ TEST_CASE("msgpack can decode integers")
   REQUIRE(msgpack::decode("ceffffffff"_hex) == 0xffffffff);
   REQUIRE(msgpack::decode("cf0000000000000000"_hex) == 0x00);
   REQUIRE(msgpack::decode("cf1fffffffffffffff"_hex) == 0x1fffffffffffffff);
+  REQUIRE(msgpack::decode("cf7fffffffffffffff"_hex) == std::numeric_limits<std::int64_t>::max());
 
   REQUIRE(msgpack::decode("d000"_hex) == 0x00);
   REQUIRE(msgpack::decode("d001"_hex) == 0x01);
@@ -76,4 +77,17 @@ TEST_CASE("msgpack can decode integers")
   REQUIRE(msgpack::decode("d18000"_hex) == -0x8000);
   REQUIRE(msgpack::decode("d18fff"_hex) == -0x7001);
   REQUIRE(msgpack::decode("d1ffff"_hex) == -0x01);
+
+  REQUIRE(msgpack::decode("d200000000"_hex) == 0x00);
+  REQUIRE(msgpack::decode("d200000001"_hex) == 0x01);
+  REQUIRE(msgpack::decode("d280000000"_hex) == -0x80000000l);
+  REQUIRE(msgpack::decode("d28fffffff"_hex) == -0x70000001l);
+  REQUIRE(msgpack::decode("d2ffffffff"_hex) == -0x01);
+
+  REQUIRE(msgpack::decode("d30000000000000000"_hex) == 0x00);
+  REQUIRE(msgpack::decode("d30000000000000001"_hex) == 0x01);
+  REQUIRE(msgpack::decode("d37fffffffffffffff"_hex) == std::numeric_limits<std::int64_t>::max());
+  REQUIRE(msgpack::decode("d38000000000000000"_hex) == std::numeric_limits<std::int64_t>::min());
+  REQUIRE(msgpack::decode("d38fffffffffffffff"_hex) == -0x7000000000000001l);
+  REQUIRE(msgpack::decode("d3ffffffffffffffff"_hex) == -0x01);
 }

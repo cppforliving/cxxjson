@@ -71,10 +71,7 @@ namespace
     if constexpr (std::is_same_v<T, std::int64_t>)
     {
       auto const space = 1u << (init - 0xd0);
-      if (std::size(bytes) < space)
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      std::int64_t x = read_int64_t<true>(space, bytes);
-      sink(x);
+      sink(read_int64_t<true>(space, bytes));
       return bytes.substr(space);
     }
     else
