@@ -23,9 +23,6 @@ TEST_CASE("msgpack throws exception on unsupported tag")
   REQUIRE_THROWS_AS(msgpack::decode("d6"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("d7"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("d8"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("d9"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("da"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("db"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("dc"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("dd"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("de"_hex), msgpack::unsupported);
@@ -108,4 +105,34 @@ TEST_CASE("msgpack can decode simple values")
   REQUIRE(msgpack::decode("c0"_hex) == cxx::json::null);
   REQUIRE(msgpack::decode("c2"_hex) == false);
   REQUIRE(msgpack::decode("c3"_hex) == true);
+}
+
+TEST_CASE("msgpack can decode strings")
+{
+  SECTION("truncation_error")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("d9"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("da00"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("db000000"_hex), msgpack::truncation_error);
+
+    REQUIRE_THROWS_AS(msgpack::decode("a1"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("d901"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("d9026c"_hex), msgpack::truncation_error);
+  }
+
+  REQUIRE(msgpack::decode("a0"_hex) == "");
+  REQUIRE(msgpack::decode("a56c6f72656dda05646f6c6f72db08646f6c6f72a164"_hex) == "lorem");
+
+  SECTION("leftovers")
+  {
+    auto const bytes =
+        "a0a3616263d905697073756dda0005646f6c6f72db0000000873697420616d6574d90164"_hex;
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(msgpack::decode(leftovers) == "");
+    REQUIRE(msgpack::decode(leftovers) == "abc");
+    REQUIRE(msgpack::decode(leftovers) == "ipsum");
+    REQUIRE(msgpack::decode(leftovers) == "dolor");
+    REQUIRE(msgpack::decode(leftovers) == "sit amet");
+    REQUIRE(std::size(leftovers) == 3);
+  }
 }

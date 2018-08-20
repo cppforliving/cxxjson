@@ -72,6 +72,22 @@ namespace
       sink(read_int64_t<true>(space, bytes));
       return bytes.substr(space);
     }
+    if constexpr (std::is_same_v<T, std::string>)
+    {
+      auto leftovers = bytes;
+      std::size_t const size = [init, &leftovers]() -> std::size_t {
+        if ((init & 0xe0) == 0xa0) return init & 0x1f;
+        std::size_t space = 1u << (init - 0xd9);
+        auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers));
+        leftovers.remove_prefix(space);
+        return s;
+      }();
+      if (std::size(leftovers) < size)
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(leftovers.data()),
+                            size));
+      return leftovers.substr(size);
+    }
     else
     {
       throw cxx::msgpack::unsupported("decoding given type is not yet supported");
@@ -84,37 +100,43 @@ namespace
                              std::size_t const level = ::cxx::codec::max_nesting)
   {
     auto const init = static_cast<cxx::codec::numbyte>(bytes.front());
+    auto leftovers = bytes.substr(sizeof(init));
     if (init < 0x80)
     {
       sink(static_cast<std::int64_t>(init));
-      return bytes.substr(1);
+      return leftovers;
     }
     if (init >= 0xe0)
     {
       sink(static_cast<std::int64_t>(static_cast<std::int8_t>(init)));
-      return bytes.substr(1);
+      return leftovers;
     }
+    if ((init & 0xe0) == 0xa0) { return parse<std::string>(init, leftovers, sink, level); }
     switch (init)
     {
       case 0xc0:
         sink(cxx::json::null);
-        return bytes.substr(1);
+        return leftovers;
       case 0xc2:
         sink(false);
-        return bytes.substr(1);
+        return leftovers;
       case 0xc3:
         sink(true);
-        return bytes.substr(1);
+        return leftovers;
       case 0xcc:
       case 0xcd:
       case 0xce:
       case 0xcf:
-        return parse<std::uint64_t>(init, bytes.substr(1), sink, level);
+        return parse<std::uint64_t>(init, leftovers, sink, level);
       case 0xd0:
       case 0xd1:
       case 0xd2:
       case 0xd3:
-        return parse<std::int64_t>(init, bytes.substr(1), sink, level);
+        return parse<std::int64_t>(init, leftovers, sink, level);
+      case 0xd9:
+      case 0xda:
+      case 0xdb:
+        return parse<std::string>(init, leftovers, sink, level);
       default:
         throw cxx::msgpack::unsupported("decoding given type is not yet supported");
     }

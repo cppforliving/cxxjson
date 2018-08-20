@@ -35,3 +35,17 @@ TEST_CASE("msgpack can transcode simple values")
   assert_transcoding(true);
   assert_transcoding(false);
 }
+
+TEST_CASE("msgpack can transcode strings")
+{
+  assert_transcoding("ü");
+  assert_transcoding("水");
+  assert_transcoding("𐅑");
+  assert_transcoding(
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+      "ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation "
+      "ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in "
+      "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur "
+      "sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est "
+      "laborum.");
+}
