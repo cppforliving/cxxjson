@@ -10,9 +10,6 @@ using msgpack = cxx::msgpack;
 
 TEST_CASE("msgpack throws exception on unsupported tag")
 {
-  REQUIRE_THROWS_AS(msgpack::decode("c4"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("c5"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("c6"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("c7"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("c8"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("c9"_hex), msgpack::unsupported);
@@ -27,6 +24,11 @@ TEST_CASE("msgpack throws exception on unsupported tag")
   REQUIRE_THROWS_AS(msgpack::decode("dd"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("de"_hex), msgpack::unsupported);
   REQUIRE_THROWS_AS(msgpack::decode("df"_hex), msgpack::unsupported);
+}
+
+TEST_CASE("msgpack throws truncation_error on empty buffer")
+{
+  REQUIRE_THROWS_AS(msgpack::decode(""_hex), msgpack::truncation_error);
 }
 
 TEST_CASE("msgpack can decode integers")
@@ -121,7 +123,13 @@ TEST_CASE("msgpack can decode strings")
   }
 
   REQUIRE(msgpack::decode("a0"_hex) == "");
-  REQUIRE(msgpack::decode("a56c6f72656dda05646f6c6f72db08646f6c6f72a164"_hex) == "lorem");
+  REQUIRE(msgpack::decode("d90000"_hex) == "");
+  REQUIRE(msgpack::decode("da000000"_hex) == "");
+  REQUIRE(msgpack::decode("db0000000000"_hex) == "");
+  REQUIRE(msgpack::decode("a56c6f72656d"_hex) == "lorem");
+  REQUIRE(msgpack::decode("d9056c6f72656d"_hex) == "lorem");
+  REQUIRE(msgpack::decode("da00056c6f72656d"_hex) == "lorem");
+  REQUIRE(msgpack::decode("db000000056c6f72656d"_hex) == "lorem");
 
   SECTION("leftovers")
   {
@@ -133,6 +141,35 @@ TEST_CASE("msgpack can decode strings")
     REQUIRE(msgpack::decode(leftovers) == "ipsum");
     REQUIRE(msgpack::decode(leftovers) == "dolor");
     REQUIRE(msgpack::decode(leftovers) == "sit amet");
+    REQUIRE(std::size(leftovers) == 3);
+  }
+}
+
+TEST_CASE("msgpack can decode byte_stream")
+{
+  SECTION("truncation_error")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("c4"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("c500"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("c6000000"_hex), msgpack::truncation_error);
+  }
+
+  REQUIRE(msgpack::decode("c400"_hex) == ""_hex);
+  REQUIRE(msgpack::decode("c50000"_hex) == ""_hex);
+  REQUIRE(msgpack::decode("c600000000"_hex) == ""_hex);
+
+  REQUIRE(msgpack::decode("c403010203"_hex) == "010203"_hex);
+  REQUIRE(msgpack::decode("c50003010203"_hex) == "010203"_hex);
+  REQUIRE(msgpack::decode("c600000003010203"_hex) == "010203"_hex);
+
+  SECTION("leftovers")
+  {
+    auto const bytes = "c400c40101c500020203c600000003040506c40107"_hex;
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(msgpack::decode(leftovers) == ""_hex);
+    REQUIRE(msgpack::decode(leftovers) == "01"_hex);
+    REQUIRE(msgpack::decode(leftovers) == "0203"_hex);
+    REQUIRE(msgpack::decode(leftovers) == "040506"_hex);
     REQUIRE(std::size(leftovers) == 3);
   }
 }

@@ -38,6 +38,7 @@ TEST_CASE("msgpack can transcode simple values")
 
 TEST_CASE("msgpack can transcode strings")
 {
+  assert_transcoding("");
   assert_transcoding("ü");
   assert_transcoding("水");
   assert_transcoding("𐅑");
@@ -48,4 +49,10 @@ TEST_CASE("msgpack can transcode strings")
       "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur "
       "sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est "
       "laborum.");
+}
+
+TEST_CASE("msgpack can transcode bytes")
+{
+  assert_transcoding(""_hex);
+  assert_transcoding("010203"_hex);
 }

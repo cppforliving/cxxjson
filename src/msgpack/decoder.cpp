@@ -88,6 +88,20 @@ namespace
                             size));
       return leftovers.substr(size);
     }
+    if constexpr (std::is_same_v<T, cxx::json::byte_stream>)
+    {
+      std::size_t const space = 1u << (init - 0xc4);
+      std::size_t const size = static_cast<std::size_t>(read_int64_t<false>(space, bytes));
+
+      if (std::size(bytes) < (space + size))
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      auto const data = bytes.substr(space, size);
+      cxx::json::byte_stream stream;
+      stream.reserve(std::size(data));
+      stream.insert(std::end(stream), std::begin(data), std::end(data));
+      sink(std::move(stream));
+      return bytes.substr(space + size);
+    }
     else
     {
       throw cxx::msgpack::unsupported("decoding given type is not yet supported");
@@ -99,6 +113,7 @@ namespace
                              Sink sink,
                              std::size_t const level = ::cxx::codec::max_nesting)
   {
+    if (std::empty(bytes)) throw cxx::msgpack::truncation_error("not enough data to decode json");
     auto const init = static_cast<cxx::codec::numbyte>(bytes.front());
     auto leftovers = bytes.substr(sizeof(init));
     if (init < 0x80)
@@ -123,6 +138,10 @@ namespace
       case 0xc3:
         sink(true);
         return leftovers;
+      case 0xc4:
+      case 0xc5:
+      case 0xc6:
+        return parse<cxx::json::byte_stream>(init, leftovers, sink, level);
       case 0xcc:
       case 0xcd:
       case 0xce:
