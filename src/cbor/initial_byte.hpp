@@ -38,11 +38,11 @@ namespace cxx::detail::cbor
   };
   static_assert(sizeof(initial_byte) == sizeof(cxx::byte));
 
-  constexpr auto const initial = cxx::overload(
-      [](cxx::json::byte_stream::reference byte) -> initial_byte* {
-        return reinterpret_cast<initial_byte*>(&byte);
-      },
-      [](cxx::json::byte_stream::const_reference byte) -> initial_byte const* {
-        return reinterpret_cast<initial_byte const*>(&byte);
-      });
+  constexpr auto const initial =
+      cxx::overload{[](cxx::json::byte_stream::reference byte) -> initial_byte* {
+                      return reinterpret_cast<initial_byte*>(&byte);
+                    },
+                    [](cxx::json::byte_stream::const_reference byte) -> initial_byte const* {
+                      return reinterpret_cast<initial_byte const*>(&byte);
+                    }};
 } // namespace cxx::detail::cbor

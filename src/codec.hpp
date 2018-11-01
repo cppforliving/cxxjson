@@ -115,23 +115,23 @@ namespace cxx
      *
      */
     static constexpr auto const ntoh =
-        cxx::overload([](std::uint8_t x) -> std::uint8_t { return x; },
+        cxx::overload{[](std::uint8_t x) -> std::uint8_t { return x; },
                       [](std::uint16_t x) -> std::uint16_t { return ntohs(x); },
                       [](std::uint32_t x) -> std::uint32_t { return ntohl(x); },
                       [](std::uint64_t x) -> std::uint64_t { return ntohll(x); },
                       [](float x) -> float { return ntohf(x); },
-                      [](double x) -> double { return ntohd(x); });
+                      [](double x) -> double { return ntohd(x); }};
 
     /**
      *
      */
     static constexpr auto const hton =
-        cxx::overload([](std::uint8_t x) -> std::uint8_t { return x; },
+        cxx::overload{[](std::uint8_t x) -> std::uint8_t { return x; },
                       [](std::uint16_t x) -> std::uint16_t { return htons(x); },
                       [](std::uint32_t x) -> std::uint32_t { return htonl(x); },
                       [](std::uint64_t x) -> std::uint64_t { return htonll(x); },
                       [](float x) -> float { return htonf(x); },
-                      [](double x) -> double { return htond(x); });
+                      [](double x) -> double { return htond(x); }};
 
     /**
      *

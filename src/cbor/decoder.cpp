@@ -197,14 +197,14 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    auto const adapter = cxx::overload(
+    auto const adapter = cxx::overload{
         [&sink](cxx::json::byte_view x) {
           sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
                                 std::size(x)));
         },
         [&sink](std::list<cxx::json::byte_view> chunks, std::size_t length) {
           merge_to<std::string>(std::move(chunks), length, sink);
-        });
+        }};
     return parse(tag<initial_byte::type::bytes>, byte, bytes, adapter);
   }
 
@@ -228,14 +228,14 @@ namespace
         throw 1;
       }
     };
-    return cxx::overload(
+    return cxx::overload{
         [impl](cxx::json::byte_view bytes) {
           impl(cxx::json::byte_stream(bytes.data(), bytes.data() + std::size(bytes)));
         },
         [impl](std::list<cxx::json::byte_view> chunks, std::size_t length) {
           merge_to<cxx::json::byte_stream>(chunks, length, impl);
         },
-        impl);
+        impl};
   };
 
   template <typename Collection, typename Sink, typename Collector>
