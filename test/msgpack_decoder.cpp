@@ -219,6 +219,10 @@ TEST_CASE("msgpack can decode array")
     REQUIRE(json[0] == cxx::json::array());
     REQUIRE(msgpack::decode("929091a56c6f72656d"_hex) ==
             cxx::json::array({cxx::json::array(), cxx::json::array({"lorem"})}));
+    REQUIRE_THROWS_AS(
+        msgpack::decode(
+            "91919191919191919191919191919191919191919191919191919191919191919191919191919191919191919191919191919191919191919191919191919101"_hex),
+        msgpack::unsupported);
   }
   SECTION("leftovers")
   {
