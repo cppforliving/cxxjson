@@ -148,8 +148,11 @@ TEST_CASE("msgpack can decode byte_stream")
   SECTION("truncation_error")
   {
     REQUIRE_THROWS_AS(msgpack::decode("c4"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("c401"_hex), msgpack::truncation_error);
     REQUIRE_THROWS_AS(msgpack::decode("c500"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("c50001"_hex), msgpack::truncation_error);
     REQUIRE_THROWS_AS(msgpack::decode("c6000000"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("c600000001"_hex), msgpack::truncation_error);
   }
 
   REQUIRE(msgpack::decode("c400"_hex) == ""_hex);
