@@ -200,24 +200,36 @@ TEST_CASE("msgpack can decode array")
   }
   SECTION("non-empty array")
   {
-    REQUIRE(msgpack::decode("9100"_hex) == cxx::json::array({0}));
-    REQUIRE(msgpack::decode("dc000101"_hex) == cxx::json::array({1}));
-    REQUIRE(msgpack::decode("dd000000012a"_hex) == cxx::json::array({0x2a}));
+    cxx::json::array const a = {0};
+    cxx::json::array const b = {1};
+    cxx::json::array const c = {0x2a};
+    REQUIRE(msgpack::decode("9100"_hex) == a);
+    REQUIRE(msgpack::decode("dc000101"_hex) == b);
+    REQUIRE(msgpack::decode("dd000000012a"_hex) == c);
     REQUIRE(msgpack::decode("9201a56c6f72656d"_hex) == cxx::json::array({1, "lorem"}));
   }
   SECTION("nested arrays")
   {
-    REQUIRE(msgpack::decode("9190"_hex) == cxx::json::array({cxx::json::array()}));
+    auto const json = msgpack::decode("9190"_hex);
+    REQUIRE(cxx::holds_alternative<cxx::json::array>(json));
+    REQUIRE(std::size(json) == 1);
+    REQUIRE(json[0] == cxx::json::array());
     REQUIRE(msgpack::decode("929091a56c6f72656d"_hex) ==
             cxx::json::array({cxx::json::array(), cxx::json::array({"lorem"})}));
   }
   SECTION("leftovers")
   {
     auto const bytes = "909300a56c6f72656d2adc0001dd0000000101"_hex;
+    auto const array = [] {
+      cxx::json::array a, b;
+      a.push_back(1);
+      b.push_back(a);
+      return b;
+    }();
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
     REQUIRE(msgpack::decode(leftovers) == cxx::json::array());
     REQUIRE(msgpack::decode(leftovers) == cxx::json::array({0, "lorem", 0x2a}));
-    REQUIRE(msgpack::decode(leftovers) == cxx::json::array({cxx::json::array({1})}));
+    REQUIRE(msgpack::decode(leftovers) == array);
     REQUIRE(std::size(leftovers) == 0);
   }
 }
