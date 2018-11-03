@@ -10,20 +10,18 @@ using msgpack = cxx::msgpack;
 
 TEST_CASE("msgpack throws exception on unsupported tag")
 {
-  REQUIRE_THROWS_AS(msgpack::decode("c7"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("c8"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("c9"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("ca"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("cb"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("d4"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("d5"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("d6"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("d7"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("d8"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("dc"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("dd"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("de"_hex), msgpack::unsupported);
-  REQUIRE_THROWS_AS(msgpack::decode("df"_hex), msgpack::unsupported);
+  REQUIRE_THROWS_AS(msgpack::decode("c7"_hex), msgpack::unsupported); // ext8
+  REQUIRE_THROWS_AS(msgpack::decode("c8"_hex), msgpack::unsupported); // ext16
+  REQUIRE_THROWS_AS(msgpack::decode("c9"_hex), msgpack::unsupported); // ext32
+  REQUIRE_THROWS_AS(msgpack::decode("ca"_hex), msgpack::unsupported); // float32
+  REQUIRE_THROWS_AS(msgpack::decode("cb"_hex), msgpack::unsupported); // float64
+  REQUIRE_THROWS_AS(msgpack::decode("d4"_hex), msgpack::unsupported); // fixext1
+  REQUIRE_THROWS_AS(msgpack::decode("d5"_hex), msgpack::unsupported); // fixext2
+  REQUIRE_THROWS_AS(msgpack::decode("d6"_hex), msgpack::unsupported); // fixext4
+  REQUIRE_THROWS_AS(msgpack::decode("d7"_hex), msgpack::unsupported); // fixext8
+  REQUIRE_THROWS_AS(msgpack::decode("d8"_hex), msgpack::unsupported); // fixext16
+  REQUIRE_THROWS_AS(msgpack::decode("de"_hex), msgpack::unsupported); // map16
+  REQUIRE_THROWS_AS(msgpack::decode("df"_hex), msgpack::unsupported); // map32
 }
 
 TEST_CASE("msgpack throws truncation_error on empty buffer")
@@ -171,5 +169,55 @@ TEST_CASE("msgpack can decode byte_stream")
     REQUIRE(msgpack::decode(leftovers) == "0203"_hex);
     REQUIRE(msgpack::decode(leftovers) == "040506"_hex);
     REQUIRE(std::size(leftovers) == 3);
+  }
+}
+
+TEST_CASE("msgpack can decode array")
+{
+  SECTION("truncation_error")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("91"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dc"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dc00"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dc0001"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dd"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dd00"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dd0000"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dd000000"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("dd00000001"_hex), msgpack::truncation_error);
+  }
+  SECTION("nested truncation_error")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("91c4"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("9300c4"_hex), msgpack::truncation_error);
+  }
+  SECTION("empty array")
+  {
+    cxx::json::array const array;
+    REQUIRE(msgpack::decode("90"_hex) == array);
+    REQUIRE(msgpack::decode("dc0000"_hex) == array);
+    REQUIRE(msgpack::decode("dd00000000"_hex) == array);
+  }
+  SECTION("non-empty array")
+  {
+    REQUIRE(msgpack::decode("9100"_hex) == cxx::json::array({0}));
+    REQUIRE(msgpack::decode("dc000101"_hex) == cxx::json::array({1}));
+    REQUIRE(msgpack::decode("dd000000012a"_hex) == cxx::json::array({0x2a}));
+    REQUIRE(msgpack::decode("9201a56c6f72656d"_hex) == cxx::json::array({1, "lorem"}));
+  }
+  SECTION("nested arrays")
+  {
+    REQUIRE(msgpack::decode("9190"_hex) == cxx::json::array({cxx::json::array()}));
+    REQUIRE(msgpack::decode("929091a56c6f72656d"_hex) ==
+            cxx::json::array({cxx::json::array(), cxx::json::array({"lorem"})}));
+  }
+  SECTION("leftovers")
+  {
+    auto const bytes = "909300a56c6f72656d2adc0001dd0000000101"_hex;
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(msgpack::decode(leftovers) == cxx::json::array());
+    REQUIRE(msgpack::decode(leftovers) == cxx::json::array({0, "lorem", 0x2a}));
+    REQUIRE(msgpack::decode(leftovers) == cxx::json::array({cxx::json::array({1})}));
+    REQUIRE(std::size(leftovers) == 0);
   }
 }

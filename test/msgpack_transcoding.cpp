@@ -56,3 +56,11 @@ TEST_CASE("msgpack can transcode bytes")
   assert_transcoding(""_hex);
   assert_transcoding("010203"_hex);
 }
+
+TEST_CASE("msgpack can transcode arrays")
+{
+  assert_transcoding(cxx::json::array());
+  assert_transcoding(cxx::json::array({0}));
+  assert_transcoding(cxx::json::array({0, "lorem"}));
+  assert_transcoding(cxx::json::array({0, "lorem", cxx::json::array({0x2a, "ipsum"}), "dolor"}));
+}

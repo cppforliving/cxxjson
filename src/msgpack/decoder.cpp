@@ -3,6 +3,11 @@
 
 namespace
 {
+  template <typename Sink>
+  cxx::json::byte_view parse(cxx::json::byte_view const,
+                             Sink,
+                             std::size_t = ::cxx::codec::max_nesting);
+
   auto const emplace_to = [](auto& target, std::string_view key = std::string_view()) {
     using target_t = std::decay_t<decltype(target)>;
     using key_t = cxx::json::dictionary::key_type;
@@ -55,8 +60,9 @@ namespace
   cxx::json::byte_view parse(cxx::codec::numbyte const init,
                              cxx::json::byte_view const bytes,
                              Sink sink,
-                             std::size_t const /*level*/)
+                             std::size_t level)
   {
+    (void)level;
     if constexpr (std::is_same_v<T, std::uint64_t>)
     {
       auto const space = 1u << (init - 0xcc);
@@ -102,6 +108,26 @@ namespace
       sink(std::move(stream));
       return bytes.substr(space + size);
     }
+    if constexpr (std::is_same_v<T, cxx::json::array>)
+    {
+      if (--level == 0)
+        throw cxx::msgpack::unsupported("nesting level exceeds implementation limit");
+      auto leftovers = bytes;
+      std::size_t size = [init, &leftovers]() -> std::size_t {
+        if ((init & 0xf0) == 0x90) return init & 0x0f;
+        std::size_t space = 1u << (init - 0xdb);
+        auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers));
+        leftovers.remove_prefix(space);
+        return s;
+      }();
+      if (std::size(leftovers) < size)
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      cxx::json::array array;
+      array.reserve(size);
+      while (size--) { leftovers = parse(leftovers, emplace_to(array), level); }
+      sink(std::move(array));
+      return leftovers;
+    }
     else
     {
       throw cxx::msgpack::unsupported("decoding given type is not yet supported");
@@ -109,9 +135,7 @@ namespace
   }
 
   template <typename Sink>
-  cxx::json::byte_view parse(cxx::json::byte_view const bytes,
-                             Sink sink,
-                             std::size_t const level = ::cxx::codec::max_nesting)
+  cxx::json::byte_view parse(cxx::json::byte_view const bytes, Sink sink, std::size_t const level)
   {
     if (std::empty(bytes)) throw cxx::msgpack::truncation_error("not enough data to decode json");
     auto const init = static_cast<cxx::codec::numbyte>(bytes.front());
@@ -127,6 +151,7 @@ namespace
       return leftovers;
     }
     if ((init & 0xe0) == 0xa0) { return parse<std::string>(init, leftovers, sink, level); }
+    if ((init & 0xf0) == 0x90) { return parse<cxx::json::array>(init, leftovers, sink, level); }
     switch (init)
     {
       case 0xc0:
@@ -156,6 +181,9 @@ namespace
       case 0xda:
       case 0xdb:
         return parse<std::string>(init, leftovers, sink, level);
+      case 0xdc:
+      case 0xdd:
+        return parse<cxx::json::array>(init, leftovers, sink, level);
       default:
         throw cxx::msgpack::unsupported("decoding given type is not yet supported");
     }
