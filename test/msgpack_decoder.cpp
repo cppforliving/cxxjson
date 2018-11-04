@@ -20,8 +20,6 @@ TEST_CASE("msgpack throws exception on unsupported tag")
   REQUIRE_THROWS_AS(msgpack::decode("d6"_hex), msgpack::unsupported); // fixext4
   REQUIRE_THROWS_AS(msgpack::decode("d7"_hex), msgpack::unsupported); // fixext8
   REQUIRE_THROWS_AS(msgpack::decode("d8"_hex), msgpack::unsupported); // fixext16
-  REQUIRE_THROWS_AS(msgpack::decode("de"_hex), msgpack::unsupported); // map16
-  REQUIRE_THROWS_AS(msgpack::decode("df"_hex), msgpack::unsupported); // map32
 }
 
 TEST_CASE("msgpack throws truncation_error on empty buffer")
@@ -238,5 +236,57 @@ TEST_CASE("msgpack can decode array")
     REQUIRE(msgpack::decode(leftovers) == cxx::json::array({0, "lorem", 0x2a}));
     REQUIRE(msgpack::decode(leftovers) == array);
     REQUIRE(std::size(leftovers) == 0);
+  }
+}
+
+TEST_CASE("msgpack can decode dictionaries")
+{
+  SECTION("truncation_error")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("81"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("de"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("de00"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("de0001"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("df"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("df00"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("df0000"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("df000000"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("df00000001"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("81d901"_hex), msgpack::truncation_error);
+  }
+  SECTION("unsupported key type")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("81d00101"_hex), msgpack::unsupported);
+  }
+  SECTION("empty dictionaries")
+  {
+    cxx::json::dictionary const dict;
+    REQUIRE(msgpack::decode("80"_hex) == dict);
+    REQUIRE(msgpack::decode("de0000"_hex) == dict);
+    REQUIRE(msgpack::decode("df00000000"_hex) == dict);
+  }
+  SECTION("non-empty dictionaries")
+  {
+    REQUIRE(msgpack::decode("81a1782a"_hex) == cxx::json{{"x"_key, 42}});
+    REQUIRE(msgpack::decode("de0002a1782aa17907"_hex) == cxx::json{{"x"_key, 42}, {"y"_key, 7}});
+    REQUIRE(msgpack::decode("df00000003a1782aa17907a17a01"_hex) ==
+            cxx::json{{"x"_key, 42}, {"y"_key, 7}, {"z"_key, 1}});
+  }
+  SECTION("nested dictionaries")
+  {
+    REQUIRE(msgpack::decode("81a17881a1792a"_hex) == cxx::json{{"x"_key, {"y"_key >> 42}}});
+    REQUIRE(msgpack::decode("81a17881a1792a"_hex) == cxx::json{{"x"_key, {"y"_key >> 42}}});
+    REQUIRE_THROWS_AS(
+        msgpack::decode(
+            "81a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17881a17800"_hex),
+        msgpack::unsupported);
+  }
+  SECTION("leftovers")
+  {
+    auto const bytes = "8081a178a179a180"_hex;
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(msgpack::decode(leftovers) == cxx::json::dictionary());
+    REQUIRE(msgpack::decode(leftovers) == cxx::json{{"x"_key, "y"}});
+    REQUIRE(std::size(leftovers) == 2);
   }
 }

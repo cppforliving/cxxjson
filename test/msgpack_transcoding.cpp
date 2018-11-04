@@ -64,3 +64,25 @@ TEST_CASE("msgpack can transcode arrays")
   assert_transcoding(cxx::json::array({0, "lorem"}));
   assert_transcoding(cxx::json::array({0, "lorem", cxx::json::array({0x2a, "ipsum"}), "dolor"}));
 }
+
+TEST_CASE("msgpack can transcode dictionaries")
+{
+  assert_transcoding(cxx::json::dictionary());
+  assert_transcoding(cxx::json{{"x"_key >> 42}});
+  assert_transcoding(cxx::json{
+      // clang-format off
+    {
+      "lorem"_key >> 42,
+      "ipsum"_key >> true,
+      "dolor"_key >> cxx::json::null,
+      {"sit"_key, {false, "lorem", 7}},
+      {"amet"_key,
+        {
+          "x"_key >> 11,
+          "y"_key >> cxx::json::null
+        }
+      }
+    }
+      // clang-format on
+  });
+}
