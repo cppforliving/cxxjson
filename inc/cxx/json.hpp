@@ -98,7 +98,6 @@ namespace cxx
    */
   template <typename... F>
   struct overload : F... {
-    explicit constexpr overload(F... f) noexcept : F(std::move(f))... {}
     using F::operator()...;
   };
 
@@ -273,27 +272,27 @@ namespace cxx
    *
    */
   constexpr auto const to_object =
-      overload([](json& x) -> json::object& { return x.to_object(); },
-               [](json const& x) -> json::object const& { return x.to_object(); });
+      overload{[](json& x) -> json::object& { return x.to_object(); },
+               [](json const& x) -> json::object const& { return x.to_object(); }};
 
   /*
    *
    */
   template <typename T>
   constexpr auto const get =
-      overload([](json const& x) -> decltype(auto) { return std::get<T>(to_object(x)); },
-               [](json& x) -> decltype(auto) { return std::get<T>(to_object(x)); });
+      overload{[](json const& x) -> decltype(auto) { return std::get<T>(to_object(x)); },
+               [](json& x) -> decltype(auto) { return std::get<T>(to_object(x)); }};
 
   /*
    *
    */
-  constexpr auto const visit = overload(
-      [](auto&& f, json& x) -> decltype(auto) {
-        return std::visit(std::forward<decltype(f)>(f), to_object(x));
-      },
-      [](auto&& f, json const& x) -> decltype(auto) {
-        return std::visit(std::forward<decltype(f)>(f), to_object(x));
-      });
+  constexpr auto const visit =
+      overload{[](auto&& f, json& x) -> decltype(auto) {
+                 return std::visit(std::forward<decltype(f)>(f), to_object(x));
+               },
+               [](auto&& f, json const& x) -> decltype(auto) {
+                 return std::visit(std::forward<decltype(f)>(f), to_object(x));
+               }};
 
   /*
    *

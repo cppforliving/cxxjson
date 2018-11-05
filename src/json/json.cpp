@@ -57,13 +57,13 @@ auto ::cxx::json::operator[](std::size_t k) const -> json const&
 
 auto ::cxx::json::size() const noexcept -> std::size_t
 {
-  auto const func = cxx::overload([](cxx::json::null_t) -> std::size_t { return 0; },
+  auto const func = cxx::overload{[](cxx::json::null_t) -> std::size_t { return 0; },
                                   [](auto const& x) -> std::size_t {
                                     if constexpr (traits::has_size_v<decltype(x)>)
                                       return std::size(x);
                                     else
                                       return 1;
-                                  });
+                                  }};
   return cxx::visit(func, *this);
 }
 

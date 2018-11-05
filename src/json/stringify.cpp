@@ -5,7 +5,7 @@
 namespace
 {
   auto const serializer =
-      cxx::overload([](cxx::json::null_t) -> std::string { return "null"; },
+      cxx::overload{[](cxx::json::null_t) -> std::string { return "null"; },
                     [](std::int64_t x) -> std::string { return std::to_string(x); },
                     [](double x) -> std::string { return std::to_string(x); },
                     [](bool x) -> std::string { return x ? "true" : "false"; },
@@ -37,7 +37,7 @@ namespace
                     },
                     [](cxx::json::byte_stream const&) -> std::string {
                       throw std::invalid_argument("bytes are not JSON serializable");
-                    });
+                    }};
 }
 
 auto ::cxx::to_string(json const& object) -> std::string

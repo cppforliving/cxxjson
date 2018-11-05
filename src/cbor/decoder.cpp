@@ -1,5 +1,6 @@
 #include "inc/cxx/cbor.hpp"
 #include "src/cbor/initial_byte.hpp"
+#include "src/codec.hpp"
 #include <algorithm>
 #include <list>
 #include <arpa/inet.h>
@@ -20,38 +21,18 @@ namespace
   template <typename T>
   constexpr bool has_reserve_v = has_reserve<T>::value;
 
-  using initial_byte = cxx::codec::cbor::initial_byte;
-  template <cxx::codec::cbor::base_type<cxx::byte> t>
-  using tag_t = std::integral_constant<cxx::codec::cbor::base_type<cxx::byte>, t>;
-  template <cxx::codec::cbor::base_type<cxx::byte> t>
+  using initial_byte = cxx::detail::cbor::initial_byte;
+  template <::cxx::codec::base_type<cxx::byte> t>
+  using tag_t = std::integral_constant<::cxx::codec::base_type<cxx::byte>, t>;
+  template <::cxx::codec::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
-
-  constexpr auto const ntohb = cxx::overload(
-      [](std::uint8_t, cxx::json::byte_view bytes) -> std::int64_t {
-        return static_cast<std::int64_t>(bytes.front());
-      },
-      [](std::uint16_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        cxx::read_to(x, bytes);
-        return cxx::ntoh(x);
-      },
-      [](std::uint32_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        cxx::read_to(x, bytes);
-        return cxx::ntoh(x);
-      },
-      [](std::uint64_t x, cxx::json::byte_view bytes) -> std::int64_t {
-        cxx::read_to(x, bytes);
-        x = cxx::ntoh(x);
-        if (x > std::numeric_limits<std::int64_t>::max())
-          throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
-        return static_cast<std::int64_t>(x);
-      });
 
   auto const read_half_float = [](cxx::json::byte_view& bytes, auto sink) {
     if (std::size(bytes) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     std::uint16_t x = 0;
-    cxx::read_to(x, bytes);
-    x = cxx::ntoh(x);
+    ::cxx::codec::read_from(x, bytes);
+    x = ::cxx::codec::ntoh(x);
     auto const halfbits_to_floatbits = [](std::uint16_t h) -> std::uint32_t {
       std::uint16_t h_exp, h_sig;
       std::uint32_t f_sgn, f_exp, f_sig;
@@ -99,13 +80,15 @@ namespace
   template <typename Sink>
   cxx::json::byte_view parse(cxx::json::byte_view, Sink, std::size_t = cxx::cbor::max_nesting);
 
-  template <typename Int, typename Sink>
-  cxx::json::byte_view parse(Int, cxx::json::byte_view bytes, Sink sink)
+  template <std::size_t S, typename Sink>
+  cxx::json::byte_view parse(cxx::json::byte_view bytes, Sink sink)
   {
-    if (std::size(bytes) < sizeof(Int))
-      throw cxx::cbor::truncation_error("not enough data to decode json");
-    sink(ntohb(Int{}, bytes));
-    bytes.remove_prefix(sizeof(Int));
+    if (std::size(bytes) < S) throw cxx::cbor::truncation_error("not enough data to decode json");
+    auto n = ::cxx::codec::nbtoh<S>(bytes);
+    if (n > std::numeric_limits<std::int64_t>::max())
+      throw cxx::cbor::unsupported("integer value bigger than std::int64_t max");
+    sink(static_cast<std::int64_t>(n));
+    bytes.remove_prefix(S);
     return bytes;
   }
 
@@ -115,7 +98,7 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    auto const additional = cxx::codec::cbor::initial(byte)->additional;
+    auto const additional = cxx::detail::cbor::initial(byte)->additional;
     if (additional <= initial_byte::value::max_insitu)
     {
       sink(static_cast<std::int64_t>(additional));
@@ -124,13 +107,13 @@ namespace
     switch (additional)
     {
       case initial_byte::value::one_byte:
-        return parse(std::uint8_t{0}, bytes, sink);
+        return parse<sizeof(std::uint8_t)>(bytes, sink);
       case initial_byte::value::two_bytes:
-        return parse(std::uint16_t{0}, bytes, sink);
+        return parse<sizeof(std::uint16_t)>(bytes, sink);
       case initial_byte::value::four_bytes:
-        return parse(std::uint32_t{0}, bytes, sink);
+        return parse<sizeof(std::uint32_t)>(bytes, sink);
       case initial_byte::value::eigth_bytes:
-        return parse(std::uint64_t{0}, bytes, sink);
+        return parse<sizeof(std::uint64_t)>(bytes, sink);
       default:
         throw cxx::cbor::data_error("meaningless additional data in initial byte");
     }
@@ -169,7 +152,7 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
+    if (cxx::detail::cbor::initial(byte)->additional == initial_byte::value::indefinite)
     {
       auto const sentinel = [](auto const& data) {
         if (std::empty(data))
@@ -214,14 +197,14 @@ namespace
                              cxx::json::byte_view bytes,
                              Sink sink)
   {
-    auto const adapter = cxx::overload(
+    auto const adapter = cxx::overload{
         [&sink](cxx::json::byte_view x) {
           sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(x.data()),
                                 std::size(x)));
         },
         [&sink](std::list<cxx::json::byte_view> chunks, std::size_t length) {
           merge_to<std::string>(std::move(chunks), length, sink);
-        });
+        }};
     return parse(tag<initial_byte::type::bytes>, byte, bytes, adapter);
   }
 
@@ -245,14 +228,14 @@ namespace
         throw 1;
       }
     };
-    return cxx::overload(
+    return cxx::overload{
         [impl](cxx::json::byte_view bytes) {
           impl(cxx::json::byte_stream(bytes.data(), bytes.data() + std::size(bytes)));
         },
         [impl](std::list<cxx::json::byte_view> chunks, std::size_t length) {
           merge_to<cxx::json::byte_stream>(chunks, length, impl);
         },
-        impl);
+        impl};
   };
 
   template <typename Collection, typename Sink, typename Collector>
@@ -264,7 +247,7 @@ namespace
   {
     if (--level == 0) throw cxx::cbor::unsupported("nesting level exceeds implementation limit");
     Collection col;
-    if (cxx::codec::cbor::initial(byte)->additional == initial_byte::value::indefinite)
+    if (cxx::detail::cbor::initial(byte)->additional == initial_byte::value::indefinite)
     {
       auto const sentinel = [](cxx::json::byte_view data) {
         if (std::empty(data))
@@ -319,7 +302,7 @@ namespace
         throw cxx::cbor::truncation_error("not enough data to decode dictionary key");
       auto const init = data.front();
       data.remove_prefix(1);
-      if (cxx::codec::cbor::initial(init)->major != initial_byte::type::unicode)
+      if (cxx::detail::cbor::initial(init)->major != initial_byte::type::unicode)
         throw cxx::cbor::unsupported(
             "dictionary keys of type different thant unicode are not supported");
       std::string_view key;
@@ -335,8 +318,8 @@ namespace
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     T x = 0.0;
-    cxx::read_to(x, bytes);
-    double ret = cxx::ntoh(x);
+    ::cxx::codec::read_from(x, bytes);
+    double ret = ::cxx::codec::ntoh(x);
     sink(ret);
     bytes.remove_prefix(sizeof(T));
   };
@@ -348,7 +331,7 @@ namespace
                              Sink sink)
   {
     auto const simple_value = [sink](cxx::byte v) {
-      auto const x = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(v);
+      auto const x = static_cast<::cxx::codec::base_type<cxx::byte>>(v);
       switch (x)
       {
         case initial_byte::value::False:
@@ -364,7 +347,7 @@ namespace
           throw cxx::cbor::unsupported("decoding given type is not yet supported");
       }
     };
-    auto const value = static_cast<cxx::codec::cbor::base_type<cxx::byte>>(byte);
+    auto const value = static_cast<::cxx::codec::base_type<cxx::byte>>(byte);
     switch (value)
     {
       case initial_byte::value::False:
@@ -403,7 +386,7 @@ namespace
     if (bytes.empty()) throw cxx::cbor::truncation_error("not enough data to decode json");
     auto const byte = bytes.front();
     bytes.remove_prefix(1);
-    switch (cxx::codec::cbor::initial(byte)->major)
+    switch (cxx::detail::cbor::initial(byte)->major)
     {
       case initial_byte::type::positive:
         return parse(tag<initial_byte::type::positive>, byte, bytes, sink);
