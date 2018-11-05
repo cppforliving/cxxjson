@@ -86,3 +86,8 @@ TEST_CASE("msgpack can transcode dictionaries")
       // clang-format on
   });
 }
+
+TEST_CASE("msgpack can transcode doubles")
+{
+  REQUIRE(cxx::get<double>(transcode(3.14)) == Approx(3.14));
+}

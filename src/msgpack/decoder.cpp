@@ -85,13 +85,13 @@ namespace
       sink(static_cast<std::int64_t>(x));
       return bytes.substr(space);
     }
-    if constexpr (std::is_same_v<T, std::int64_t>)
+    else if constexpr (std::is_same_v<T, std::int64_t>)
     {
       auto const space = 1u << (init - 0xd0);
       sink(read_int64_t<true>(space, bytes));
       return bytes.substr(space);
     }
-    if constexpr (std::is_same_v<T, std::string>)
+    else if constexpr (std::is_same_v<T, std::string>)
     {
       auto leftovers = bytes;
       std::size_t const size = string_size(init, leftovers);
@@ -101,7 +101,7 @@ namespace
                             size));
       return leftovers.substr(size);
     }
-    if constexpr (std::is_same_v<T, cxx::json::byte_stream>)
+    else if constexpr (std::is_same_v<T, cxx::json::byte_stream>)
     {
       auto leftovers = bytes;
       std::size_t const space = 1u << (init - 0xc4);
@@ -118,7 +118,7 @@ namespace
       sink(std::move(stream));
       return leftovers.substr(size);
     }
-    if constexpr (std::is_same_v<T, cxx::json::array>)
+    else if constexpr (std::is_same_v<T, cxx::json::array>)
     {
       auto leftovers = bytes;
       std::size_t size = [init, &leftovers]() -> std::size_t {
@@ -136,7 +136,7 @@ namespace
       sink(std::move(array));
       return leftovers;
     }
-    if constexpr (std::is_same_v<T, cxx::json::dictionary>)
+    else if constexpr (std::is_same_v<T, cxx::json::dictionary>)
     {
       auto leftovers = bytes;
       std::size_t size = [init, &leftovers]() -> std::size_t {
@@ -155,7 +155,7 @@ namespace
         if (!is_string(first)) throw ::cxx::msgpack::unsupported("only string keys are supported");
         leftovers.remove_prefix(sizeof(first));
         auto const key_size = string_size(first, leftovers);
-        if(std::size(leftovers) < key_size)
+        if (std::size(leftovers) < key_size)
           throw cxx::msgpack::truncation_error("not enough data to decode json");
         std::string_view key{reinterpret_cast<std::string_view::const_pointer>(leftovers.data()),
                              key_size};
@@ -164,6 +164,26 @@ namespace
       }
       sink(std::move(dict));
       return leftovers;
+    }
+    else if constexpr (std::is_same_v<T, float>)
+    {
+      float f = 0.0;
+      if (std::size(bytes) < sizeof(f))
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      cxx::codec::read_from(f, bytes);
+      double d = cxx::codec::ntoh(f);
+      sink(d);
+      return bytes.substr(sizeof(f));
+    }
+    else if constexpr (std::is_same_v<T, double>)
+    {
+      double f = 0.0;
+      if (std::size(bytes) < sizeof(f))
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      cxx::codec::read_from(f, bytes);
+      double d = cxx::codec::ntoh(f);
+      sink(d);
+      return bytes.substr(sizeof(f));
     }
     else
     {
@@ -206,6 +226,10 @@ namespace
       case 0xc5:
       case 0xc6:
         return parse<cxx::json::byte_stream>(init, leftovers, sink, level);
+      case 0xca:
+        return parse<float>(init, leftovers, sink, level);
+      case 0xcb:
+        return parse<double>(init, leftovers, sink, level);
       case 0xcc:
       case 0xcd:
       case 0xce:

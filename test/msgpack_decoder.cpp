@@ -13,8 +13,6 @@ TEST_CASE("msgpack throws exception on unsupported tag")
   REQUIRE_THROWS_AS(msgpack::decode("c7"_hex), msgpack::unsupported); // ext8
   REQUIRE_THROWS_AS(msgpack::decode("c8"_hex), msgpack::unsupported); // ext16
   REQUIRE_THROWS_AS(msgpack::decode("c9"_hex), msgpack::unsupported); // ext32
-  REQUIRE_THROWS_AS(msgpack::decode("ca"_hex), msgpack::unsupported); // float32
-  REQUIRE_THROWS_AS(msgpack::decode("cb"_hex), msgpack::unsupported); // float64
   REQUIRE_THROWS_AS(msgpack::decode("d4"_hex), msgpack::unsupported); // fixext1
   REQUIRE_THROWS_AS(msgpack::decode("d5"_hex), msgpack::unsupported); // fixext2
   REQUIRE_THROWS_AS(msgpack::decode("d6"_hex), msgpack::unsupported); // fixext4
@@ -288,5 +286,24 @@ TEST_CASE("msgpack can decode dictionaries")
     REQUIRE(msgpack::decode(leftovers) == cxx::json::dictionary());
     REQUIRE(msgpack::decode(leftovers) == cxx::json{{"x"_key, "y"}});
     REQUIRE(std::size(leftovers) == 2);
+  }
+}
+
+TEST_CASE("msgpack can decode floats and doubles")
+{
+  SECTION("truncation_error")
+  {
+    REQUIRE_THROWS_AS(msgpack::decode("ca000000"_hex), msgpack::truncation_error);
+    REQUIRE_THROWS_AS(msgpack::decode("cb00000000000000"_hex), msgpack::truncation_error);
+  }
+  REQUIRE(cxx::get<double>(msgpack::decode("ca4048f5c3"_hex)) == Approx(3.14));
+  REQUIRE(cxx::get<double>(msgpack::decode("cb40091eb851eb851f"_hex)) == Approx(3.14));
+  SECTION("leftovers")
+  {
+    auto const bytes = "ca4048f5c3cb40091eb851eb851f00"_hex;
+    cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
+    REQUIRE(cxx::get<double>(msgpack::decode(leftovers)) == Approx(3.14));
+    REQUIRE(cxx::get<double>(msgpack::decode(leftovers)) == Approx(3.14));
+    REQUIRE(std::size(leftovers) == 1);
   }
 }
