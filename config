@@ -49,8 +49,7 @@ set_flags() {
       export CXX="clang++"
     ;;
     *)
-      echo 'wrong switch'
-      exit 1
+      echo 'wrong switch ' ${1}
   esac
 }
 
