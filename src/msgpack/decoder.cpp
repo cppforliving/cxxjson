@@ -30,6 +30,11 @@ namespace
     };
   };
 
+  template <typename T>
+  struct quote {
+    using type = T;
+  };
+
   template <bool isSigned, typename T>
   using Int = std::conditional_t<isSigned, std::make_signed_t<T>, std::make_unsigned_t<T>>;
 
@@ -69,126 +74,167 @@ namespace
     return s;
   };
 
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<std::uint64_t>,
+                             cxx::codec::numbyte const init,
+                             cxx::json::byte_view const bytes,
+                             Sink sink,
+                             std::size_t)
+  {
+    auto const space = 1u << (init - 0xcc);
+    auto const x = read_int64_t<false>(space, bytes);
+    if (x > std::numeric_limits<std::int64_t>::max())
+      throw cxx::msgpack::unsupported("integer value bigger than std::int64_t max");
+    sink(static_cast<std::int64_t>(x));
+    return bytes.substr(space);
+  }
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<std::int64_t>,
+                             cxx::codec::numbyte const init,
+                             cxx::json::byte_view const bytes,
+                             Sink sink,
+                             std::size_t)
+  {
+    auto const space = 1u << (init - 0xd0);
+    sink(read_int64_t<true>(space, bytes));
+    return bytes.substr(space);
+  }
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<std::string>,
+                             cxx::codec::numbyte const init,
+                             cxx::json::byte_view bytes,
+                             Sink sink,
+                             std::size_t)
+  {
+    std::size_t const size = string_size(init, bytes);
+    if (std::size(bytes) < size)
+      throw cxx::msgpack::truncation_error("not enough data to decode json");
+    sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(bytes.data()), size));
+    return bytes.substr(size);
+  }
+
+  template <typename T>
+  auto const read_double = [](cxx::json::byte_view& bytes) -> double {
+    T x = 0.0;
+    if (std::size(bytes) < sizeof(x))
+      throw cxx::msgpack::truncation_error("not enough data to decode json");
+    cxx::codec::read_from(x, bytes);
+    bytes.remove_prefix(sizeof(x));
+    return static_cast<double>(cxx::codec::ntoh(x));
+  };
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<double>,
+                             cxx::codec::numbyte const,
+                             cxx::json::byte_view bytes,
+                             Sink sink,
+                             std::size_t)
+  {
+    sink(read_double<double>(bytes));
+    return bytes;
+  }
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<float>,
+                             cxx::codec::numbyte const,
+                             cxx::json::byte_view bytes,
+                             Sink sink,
+                             std::size_t)
+  {
+    sink(read_double<float>(bytes));
+    return bytes;
+  }
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<cxx::json::byte_stream>,
+                             cxx::codec::numbyte const init,
+                             cxx::json::byte_view bytes,
+                             Sink sink,
+                             std::size_t)
+  {
+    auto const calc_size = [&] {
+      std::size_t const space = 1u << (init - 0xc4);
+      std::size_t const s = static_cast<std::size_t>(read_int64_t<false>(space, bytes));
+      bytes.remove_prefix(space);
+      return s;
+    };
+
+    auto const size = calc_size();
+    if (std::size(bytes) < size)
+      throw cxx::msgpack::truncation_error("not enough data to decode json");
+    auto const data = bytes.substr(0, size);
+    sink(cxx::json::byte_stream(std::begin(data), std::end(data)));
+    return bytes.substr(size);
+  }
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<cxx::json::array>,
+                             cxx::codec::numbyte const init,
+                             cxx::json::byte_view bytes,
+                             Sink sink,
+                             std::size_t level)
+  {
+    std::size_t size = [init, &bytes]() -> std::size_t {
+      if ((init & 0xf0) == 0x90) return init & 0x0f;
+      std::size_t space = 1u << (init - 0xdb);
+      auto const s = static_cast<std::size_t>(read_int64_t<false>(space, bytes));
+      bytes.remove_prefix(space);
+      return s;
+    }();
+
+    if (std::size(bytes) < size)
+      throw cxx::msgpack::truncation_error("not enough data to decode json");
+    cxx::json::array array;
+    array.reserve(size);
+    while (size--) { bytes = parse(bytes, emplace_to(array), level); }
+    sink(std::move(array));
+    return bytes;
+  }
+
+  template <typename Sink>
+  cxx::json::byte_view parse(quote<cxx::json::dictionary>,
+                             cxx::codec::numbyte const init,
+                             cxx::json::byte_view bytes,
+                             Sink sink,
+                             std::size_t level)
+  {
+    std::size_t size = [init, &bytes]() -> std::size_t {
+      if ((init & 0xf0) == 0x80) return init & 0x0f;
+      std::size_t space = 1u << (init - 0xdd);
+      auto const s = static_cast<std::size_t>(read_int64_t<false>(space, bytes));
+      bytes.remove_prefix(space);
+      return s;
+    }();
+
+    cxx::json::dictionary dict;
+    while (size--)
+    {
+      if (std::size(bytes) < 2 * (size + 1))
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      auto const first = static_cast<cxx::codec::numbyte>(bytes.front());
+      if (!is_string(first)) throw ::cxx::msgpack::unsupported("only string keys are supported");
+      bytes.remove_prefix(sizeof(first));
+      auto const key_size = string_size(first, bytes);
+      if (std::size(bytes) < key_size)
+        throw cxx::msgpack::truncation_error("not enough data to decode json");
+      std::string_view key{reinterpret_cast<std::string_view::const_pointer>(bytes.data()),
+                           key_size};
+      bytes.remove_prefix(key_size);
+      bytes = parse(bytes, emplace_to(dict, key), level);
+    }
+    sink(std::move(dict));
+    return bytes;
+  }
+
   template <typename T, typename Sink>
   cxx::json::byte_view parse(cxx::codec::numbyte const init,
                              cxx::json::byte_view const bytes,
                              Sink sink,
                              std::size_t level)
   {
-    (void)level;
-    if constexpr (std::is_same_v<T, std::uint64_t>)
-    {
-      auto const space = 1u << (init - 0xcc);
-      auto const x = read_int64_t<false>(space, bytes);
-      if (x > std::numeric_limits<std::int64_t>::max())
-        throw cxx::msgpack::unsupported("integer value bigger than std::int64_t max");
-      sink(static_cast<std::int64_t>(x));
-      return bytes.substr(space);
-    }
-    else if constexpr (std::is_same_v<T, std::int64_t>)
-    {
-      auto const space = 1u << (init - 0xd0);
-      sink(read_int64_t<true>(space, bytes));
-      return bytes.substr(space);
-    }
-    else if constexpr (std::is_same_v<T, std::string>)
-    {
-      auto leftovers = bytes;
-      std::size_t const size = string_size(init, leftovers);
-      if (std::size(leftovers) < size)
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(leftovers.data()),
-                            size));
-      return leftovers.substr(size);
-    }
-    else if constexpr (std::is_same_v<T, cxx::json::byte_stream>)
-    {
-      auto leftovers = bytes;
-      std::size_t const space = 1u << (init - 0xc4);
-      std::size_t const size = static_cast<std::size_t>(read_int64_t<false>(space, leftovers));
-      leftovers.remove_prefix(space);
-
-      if (std::size(leftovers) < size)
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      cxx::json::byte_stream stream;
-      stream.reserve(size);
-      stream.insert(std::end(stream), std::begin(leftovers),
-                    std::next(std::begin(leftovers),
-                              static_cast<cxx::json::byte_view::difference_type>(size)));
-      sink(std::move(stream));
-      return leftovers.substr(size);
-    }
-    else if constexpr (std::is_same_v<T, cxx::json::array>)
-    {
-      auto leftovers = bytes;
-      std::size_t size = [init, &leftovers]() -> std::size_t {
-        if ((init & 0xf0) == 0x90) return init & 0x0f;
-        std::size_t space = 1u << (init - 0xdb);
-        auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers));
-        leftovers.remove_prefix(space);
-        return s;
-      }();
-      if (std::size(leftovers) < size)
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      cxx::json::array array;
-      array.reserve(size);
-      while (size--) { leftovers = parse(leftovers, emplace_to(array), level); }
-      sink(std::move(array));
-      return leftovers;
-    }
-    else if constexpr (std::is_same_v<T, cxx::json::dictionary>)
-    {
-      auto leftovers = bytes;
-      std::size_t size = [init, &leftovers]() -> std::size_t {
-        if ((init & 0xf0) == 0x80) return init & 0x0f;
-        std::size_t space = 1u << (init - 0xdd);
-        auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers));
-        leftovers.remove_prefix(space);
-        return s;
-      }();
-      cxx::json::dictionary dict;
-      while (size--)
-      {
-        if (std::size(leftovers) < 2 * (size + 1))
-          throw cxx::msgpack::truncation_error("not enough data to decode json");
-        auto const first = static_cast<cxx::codec::numbyte>(leftovers.front());
-        if (!is_string(first)) throw ::cxx::msgpack::unsupported("only string keys are supported");
-        leftovers.remove_prefix(sizeof(first));
-        auto const key_size = string_size(first, leftovers);
-        if (std::size(leftovers) < key_size)
-          throw cxx::msgpack::truncation_error("not enough data to decode json");
-        std::string_view key{reinterpret_cast<std::string_view::const_pointer>(leftovers.data()),
-                             key_size};
-        leftovers.remove_prefix(key_size);
-        leftovers = parse(leftovers, emplace_to(dict, key), level);
-      }
-      sink(std::move(dict));
-      return leftovers;
-    }
-    else if constexpr (std::is_same_v<T, float>)
-    {
-      float f = 0.0;
-      if (std::size(bytes) < sizeof(f))
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      cxx::codec::read_from(f, bytes);
-      double d = cxx::codec::ntoh(f);
-      sink(d);
-      return bytes.substr(sizeof(f));
-    }
-    else if constexpr (std::is_same_v<T, double>)
-    {
-      double f = 0.0;
-      if (std::size(bytes) < sizeof(f))
-        throw cxx::msgpack::truncation_error("not enough data to decode json");
-      cxx::codec::read_from(f, bytes);
-      double d = cxx::codec::ntoh(f);
-      sink(d);
-      return bytes.substr(sizeof(f));
-    }
-    else
-    {
-      throw cxx::msgpack::unsupported("decoding given type is not yet supported");
-    }
+    return parse(quote<T>{}, init, bytes, sink, level);
   }
 
   template <typename Sink>
