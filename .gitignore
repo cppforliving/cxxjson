@@ -1,9 +1,14 @@
+*.egg-info
 *.gcov
 *.swo
 *.swp
+*cpython*.so
 .lock*
+.tox
 .waf*
+__pycache__
 build
 core
 crash-*
 logs
+cython/*.cpp

@@ -1,0 +1,1 @@
+global-include *.pyx *.pxd src/**/*.cpp src/**/*.hpp inc/**/*.hpp
