@@ -135,3 +135,9 @@ clang:fuzzer:
   - source config release sanitize
   - export CXX=clang++
   script: ./waf configure fuzzer
+
+
+cython:binding:
+  stage: post
+  script:
+  - tox
