@@ -6,8 +6,8 @@ services:
   cxx:
     build:
       args:
-        GROUP: '1002'
-        USER: '1001'
+        GROUP: '1000'
+        USER: '1000'
       context: ./docker
       dockerfile: develop
     cap_add:
@@ -15,7 +15,7 @@ services:
     command: bash
     container_name: cxx
     tty: true
-    user: ${UID:-1001}:${GID:-1002}
+    user: ${UID:-1000}:${GID:-1000}
     volumes:
     - .:/home/user/cxx:rw
     working_dir: /home/user/cxx
