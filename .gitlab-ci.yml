@@ -90,6 +90,7 @@ clang:libstdc++:debug:sanitize:
 clang:libcxx:debug:sanitize:
   stage: sanitize
   <<: *build
+  allow_failure: true
   before_script:
   - source config debug libc++ sanitize
   - export CXX=clang++
