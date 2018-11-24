@@ -1,5 +1,6 @@
 from libcpp.string cimport string
-from libc.stdint cimport int64_t
+from libc.stdint cimport int64_t, int32_t
+from libcpp cimport bool
 
 
 cdef extern from "cxx/json.hpp" namespace "cxx":
@@ -9,3 +10,5 @@ cdef extern from "cxx/json.hpp" namespace "cxx":
         json(int64_t)
         json(double)
         json(const string&) except +
+
+        bool operator==(int64_t)
