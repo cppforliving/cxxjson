@@ -12,5 +12,6 @@ cdef extern from "cxx/json.hpp" namespace "cxx":
         json(const string&) except +
 
         bool operator==(int64_t)
+        bool operator==(double)
         bool operator==(string)
         bool operator==(json)

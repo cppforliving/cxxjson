@@ -1,32 +1,43 @@
-def test_canImportCxxJson(cxxjson):
-    json = cxxjson(42)
-    same = cxxjson(42)
-    other = cxxjson("lorem ipsum")
-    assert json == json
-    assert json == 42
-    assert same == 42
-    assert json == same
-    assert json != other
-    assert json != cxxjson(7)
-    assert json != "lorem ipsum"
+import pytest
+from itertools import combinations
+
+values = {42, 7, 3.14, 2.71, 'lorem', 'ipsum'}
+pairs = set(combinations(values, 2))
 
 
-def test_canCreateCxxJsonFromInt(cxxjson):
-    json = cxxjson(42)
-    assert json == 42
+@pytest.mark.parametrize('value', values)
+def test_canCreateCxxJson(cxxjson, value):
+    json = cxxjson(value)
+    assert json == value
 
 
-def test_canCompateCxxJsonToItSelf(cxxjson):
-    json = cxxjson(42)
-    assert json == json
-    assert (json != json) is False
+@pytest.mark.parametrize('values', pairs)
+def test_canCompareCxxJsonWithRawValues(cxxjson, values):
+    a, b = values
+    self = cxxjson(a)
+
+    assert self == a
+    assert (self != a) is False
+
+    assert (self == b) is False
+    assert self != b
 
 
-def test_canCompareCxxJsonToInt(cxxjson):
-    assert cxxjson(42) == 42
-    assert (cxxjson(42) != 42) is False
-    assert (cxxjson(42) == 77) is False
-    assert cxxjson(42) != 77
+@pytest.mark.parametrize('values', pairs)
+def test_canCompareCxxJsonWithOtherJsons(cxxjson, values):
+    a, b = values
+    self = cxxjson(a)
+    same = cxxjson(a)
+    other = cxxjson(b)
+
+    assert self == self
+    assert (self != self) is False
+
+    assert self == same
+    assert (self != same) is False
+
+    assert (self == other) is False
+    assert self != other
 
 
 def test_canImportCxxMsgpack(cxxmsgpack):

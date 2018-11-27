@@ -14,6 +14,8 @@ cdef class json:
             self.variant = cppjson(<int64_t>value)
         elif isinstance(value, str):
             self.variant = cppjson(<string>value)
+        elif isinstance(value, float):
+            self.variant = cppjson(<double>value)
 
     def __eq__(self, value):
         if id(self) == id(value): return True
@@ -23,6 +25,8 @@ cdef class json:
             return self.variant == <int64_t>value
         if isinstance(value, str):
             return self.variant == <string>value
+        if isinstance(value, float):
+            return self.variant == <double>value
         return False
 
     def __ne__(self, value):
