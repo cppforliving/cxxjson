@@ -1,7 +1,7 @@
 import pytest
 from itertools import combinations
 
-values = {42, 7, 3.14, 2.71, 'lorem', 'ipsum', True, False, None}
+values = {42, 7, 3.14, 2.71, 'lorem', 'ipsum', True, False, None, b'lorem', b'ipsum'}
 pairs = set(combinations(values, 2))
 
 
