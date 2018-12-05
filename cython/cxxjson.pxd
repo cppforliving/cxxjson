@@ -1,6 +1,7 @@
-from libcpp.string cimport string
 from libc.stdint cimport int64_t, uint8_t
 from libcpp cimport bool
+from libcpp.map cimport map
+from libcpp.string cimport string
 from libcpp.vector cimport vector
 
 
@@ -25,6 +26,7 @@ cdef extern from "cxx/json.hpp" namespace "cxx":
         json(const string & ) except +
         json(double)
         json(int64_t)
+        json(map[string, json])
         json(null_t)
         json(vector[byte])
         json(vector[json])
@@ -34,6 +36,7 @@ cdef extern from "cxx/json.hpp" namespace "cxx":
         bool operator == (const string&)
         bool operator == (double)
         bool operator == (int64_t)
+        bool operator == (map[string, json])
         bool operator == (null_t)
         bool operator == (vector[byte])
         bool operator == (vector[json])
