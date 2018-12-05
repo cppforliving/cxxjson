@@ -27,6 +27,7 @@ cdef extern from "cxx/json.hpp" namespace "cxx":
         json(int64_t)
         json(null_t)
         json(vector[byte])
+        json(vector[json])
 
         bool operator == (bool)
         bool operator == (const json&)
@@ -35,3 +36,4 @@ cdef extern from "cxx/json.hpp" namespace "cxx":
         bool operator == (int64_t)
         bool operator == (null_t)
         bool operator == (vector[byte])
+        bool operator == (vector[json])

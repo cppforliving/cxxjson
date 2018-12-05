@@ -16,6 +16,7 @@ cdef class json:
 
     def __cinit__(self, value):
         cdef vector[byte] data
+        cdef vector[cppjson] array
         if isinstance(value, int):
             self.variant = cppjson(<int64_t>value)
         elif isinstance(value, str):
@@ -29,12 +30,20 @@ cdef class json:
             for x in value:
                 data.push_back(byte(<uint8_t>x))
             self.variant = cppjson(data)
+        elif isinstance(value, list):
+            array.reserve(len(value))
+            for x in value:
+                array.push_back(json(x).variant)
+            self.variant = cppjson(array)
         elif value is None:
             self.variant = cppjson(null_t())
+        else:
+            raise TypeError(f'unsupported type')
 
 
     def __eq__(self, value):
         cdef vector[byte] data
+        cdef vector[cppjson] array
         if id(self) == id(value):
             return True
         if isinstance(value, json):
@@ -52,9 +61,15 @@ cdef class json:
             for x in value:
               data.push_back(byte(<uint8_t>x))
             return self.variant == data
+        if isinstance(value, list):
+            array.reserve(len(value))
+            for x in value:
+                array.push_back(json(x).variant)
+            return self.variant == array
         if value is None:
             return self.variant == null_t()
         return False
+
 
     def __ne__(self, value):
         return (self == value) != True
