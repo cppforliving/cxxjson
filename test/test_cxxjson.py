@@ -1,13 +1,5 @@
 import pytest
-from itertools import combinations
-
-values = [
-    42, 7, 3.14, 2.71, 'lorem', 'ipsum', True, False, None, b'lorem', b'ipsum', [], [
-        'lorem', 42, 3.14, True, None, ['ipsum']], dict(), {
-            'lorem': 'ipsum', 'dolor': 42, 'sit': 3.14, 'amet': [
-                True, None], 'consectetur':{
-                    'adipisicing': 'elit'}}]
-pairs = tuple(combinations(values, 2))
+from conftest import values, pairs
 
 
 @pytest.mark.parametrize('value', values)
@@ -50,7 +42,3 @@ def test_raisesTypeErrorWhenUnsupportedTypeGivenToCreateCxxJson(cxxjson):
         pass
     with pytest.raises(TypeError):
         cxxjson(Unsupported())
-
-
-def test_canImportCxxMsgpack(cxxmsgpack):
-    pass

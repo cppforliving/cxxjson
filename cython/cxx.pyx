@@ -3,6 +3,7 @@
 # from cython.operator cimport dereference as deref
 from cxxjson cimport byte
 from cxxjson cimport json as cppjson
+from cxxjson cimport byte_stream
 from cxxjson cimport null_t
 from cxxmsgpack cimport msgpack as cppmsgpack
 from libc.stdint cimport int64_t, uint8_t
@@ -15,7 +16,7 @@ cdef class json:
     cdef cppjson variant
 
     def __cinit__(self, value):
-        cdef vector[byte] data
+        cdef byte_stream data
         cdef vector[cppjson] array
         cdef map[string, cppjson] dictionary
         if isinstance(value, int):
@@ -59,3 +60,8 @@ cdef class json:
 
 cdef class msgpack:
     cdef cppmsgpack object
+
+    @staticmethod
+    def encode(value):
+        cdef byte_stream data = cppmsgpack.encode(json(value).variant)
+        return bytes([<int>x for x in data])
