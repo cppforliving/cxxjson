@@ -21,7 +21,13 @@ RUN pacman -Syy --noconfirm \
         python \
         python-pip \
  && pacman -Scc --noconfirm \
- && pip install gcovr \
+ && pip install \
+        cython \
+        gcovr \
+        pycodestyle \
+        pytest \
+        sphinx \
+        tox \
  && useradd \
       --system \
       --no-create-home \

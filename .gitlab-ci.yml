@@ -90,6 +90,7 @@ clang:libstdc++:debug:sanitize:
 clang:libcxx:debug:sanitize:
   stage: sanitize
   <<: *build
+  allow_failure: true
   before_script:
   - source config debug libc++ sanitize
   - export CXX=clang++
@@ -135,3 +136,9 @@ clang:fuzzer:
   - source config release sanitize
   - export CXX=clang++
   script: ./waf configure fuzzer
+
+
+cython:binding:
+  stage: post
+  script:
+  - tox
