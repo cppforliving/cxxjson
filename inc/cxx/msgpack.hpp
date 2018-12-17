@@ -42,11 +42,6 @@ namespace cxx
     /*
      *
      */
-    constexpr static std::size_t const max_size = 0xffffffff;
-
-    /*
-     *
-     */
     static json::byte_stream encode(json const&);
 
     /*

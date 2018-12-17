@@ -31,8 +31,6 @@ namespace
 
     auto const collect = [](auto const& x, auto& stream, auto code, auto sink) {
       auto const size = std::size(x);
-      if (size > std::numeric_limits<std::uint32_t>::max())
-        throw cxx::msgpack::unsupported("collection size exceeds max value");
       using value_type = typename std::decay_t<decltype(x)>::value_type;
       ::cxx::codec::assure(stream, size * sizeof(value_type) + sizeof(std::uint32_t) + 1);
 
