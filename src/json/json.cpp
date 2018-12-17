@@ -1,5 +1,19 @@
 #include "inc/cxx/json.hpp"
 
+namespace
+{
+  template <typename T, typename = void>
+  struct has_size : std::false_type {
+  };
+
+  template <typename T>
+  struct has_size<
+      T,
+      std::void_t<decltype(std::declval<std::size_t&>() = (std::declval<T const&>().size()))>>
+      : std::true_type {
+  };
+} // namespace
+
 ::cxx::json::json(std::initializer_list<cxx::json::array::value_type> init)
     : storage(cxx::json::array(std::move(init)))
 {
@@ -59,7 +73,7 @@ auto ::cxx::json::size() const noexcept -> std::size_t
 {
   auto const func = cxx::overload{[](cxx::json::null_t) -> std::size_t { return 0; },
                                   [](auto const& x) -> std::size_t {
-                                    if constexpr (traits::has_size_v<decltype(x)>)
+                                    if constexpr (has_size<decltype(x)>::value)
                                       return std::size(x);
                                     else
                                       return 1;

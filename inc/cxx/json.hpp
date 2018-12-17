@@ -13,23 +13,6 @@ namespace cxx::traits
   /*
    *
    */
-  template <typename T, typename = void>
-  struct has_size : std::false_type {
-  };
-
-  template <typename T>
-  struct has_size<
-      T,
-      std::void_t<decltype(std::declval<std::size_t&>() = (std::declval<T const&>().size()))>>
-      : std::true_type {
-  };
-
-  template <typename T>
-  constexpr bool has_size_v = has_size<T>::value;
-
-  /*
-   *
-   */
   template <typename T>
   struct is_convertible_to {
     template <typename... U>
