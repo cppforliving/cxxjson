@@ -1,5 +1,6 @@
 #pragma once
 #include <cxx/json.hpp>
+#include <cxx/by_ref.hpp>
 
 namespace cxx
 {
@@ -52,6 +53,6 @@ namespace cxx
     /*
      *
      */
-    static json decode(json::byte_view&);
+    static json decode(cxx::output_parameter<json::byte_view>);
   };
 } // namespace cxx

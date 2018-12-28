@@ -305,12 +305,12 @@ namespace
 auto ::cxx::msgpack::decode(json::byte_stream const& stream) -> json
 {
   cxx::json::byte_view data(stream.data(), std::size(stream));
-  return decode(data);
+  return decode(by_ref(data));
 }
 
-auto ::cxx::msgpack::decode(json::byte_view& bytes) -> json
+auto ::cxx::msgpack::decode(output_parameter<json::byte_view> bytes) -> json
 {
   cxx::json json;
-  bytes = parse(bytes, emplace_to(json));
+  bytes = parse(*bytes, emplace_to(json));
   return json;
 }

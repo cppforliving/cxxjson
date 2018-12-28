@@ -88,10 +88,10 @@ TEST_CASE("msgpack can decode integers")
   {
     auto const bytes = "ef7fcdff77d18fff00"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(msgpack::decode(leftovers) == -0x11);
-    REQUIRE(msgpack::decode(leftovers) == 0x7f);
-    REQUIRE(msgpack::decode(leftovers) == 0xff77);
-    REQUIRE(msgpack::decode(leftovers) == -0x7001);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == -0x11);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == 0x7f);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == 0xff77);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == -0x7001);
     REQUIRE(std::size(leftovers) == 1);
   }
 }
@@ -130,11 +130,11 @@ TEST_CASE("msgpack can decode strings")
     auto const bytes =
         "a0a3616263d905697073756dda0005646f6c6f72db0000000873697420616d6574d90164"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(msgpack::decode(leftovers) == "");
-    REQUIRE(msgpack::decode(leftovers) == "abc");
-    REQUIRE(msgpack::decode(leftovers) == "ipsum");
-    REQUIRE(msgpack::decode(leftovers) == "dolor");
-    REQUIRE(msgpack::decode(leftovers) == "sit amet");
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "");
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "abc");
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "ipsum");
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "dolor");
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "sit amet");
     REQUIRE(std::size(leftovers) == 3);
   }
 }
@@ -163,10 +163,10 @@ TEST_CASE("msgpack can decode byte_stream")
   {
     auto const bytes = "c400c40101c500020203c600000003040506c40107"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(msgpack::decode(leftovers) == ""_hex);
-    REQUIRE(msgpack::decode(leftovers) == "01"_hex);
-    REQUIRE(msgpack::decode(leftovers) == "0203"_hex);
-    REQUIRE(msgpack::decode(leftovers) == "040506"_hex);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == ""_hex);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "01"_hex);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "0203"_hex);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == "040506"_hex);
     REQUIRE(std::size(leftovers) == 3);
   }
 }
@@ -230,9 +230,9 @@ TEST_CASE("msgpack can decode array")
       return b;
     }();
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(msgpack::decode(leftovers) == cxx::json::array());
-    REQUIRE(msgpack::decode(leftovers) == cxx::json::array({0, "lorem", 0x2a}));
-    REQUIRE(msgpack::decode(leftovers) == array);
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == cxx::json::array());
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == cxx::json::array({0, "lorem", 0x2a}));
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == array);
     REQUIRE(std::size(leftovers) == 0);
   }
 }
@@ -283,8 +283,8 @@ TEST_CASE("msgpack can decode dictionaries")
   {
     auto const bytes = "8081a178a179a180"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(msgpack::decode(leftovers) == cxx::json::dictionary());
-    REQUIRE(msgpack::decode(leftovers) == cxx::json{{"x"_key, "y"}});
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == cxx::json::dictionary());
+    REQUIRE(msgpack::decode(cxx::by_ref(leftovers)) == cxx::json{{"x"_key, "y"}});
     REQUIRE(std::size(leftovers) == 2);
   }
 }
@@ -302,8 +302,8 @@ TEST_CASE("msgpack can decode floats and doubles")
   {
     auto const bytes = "ca4048f5c3cb40091eb851eb851f00"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(cxx::get<double>(msgpack::decode(leftovers)) == Approx(3.14));
-    REQUIRE(cxx::get<double>(msgpack::decode(leftovers)) == Approx(3.14));
+    REQUIRE(cxx::get<double>(msgpack::decode(cxx::by_ref(leftovers))) == Approx(3.14));
+    REQUIRE(cxx::get<double>(msgpack::decode(cxx::by_ref(leftovers))) == Approx(3.14));
     REQUIRE(std::size(leftovers) == 1);
   }
 }
