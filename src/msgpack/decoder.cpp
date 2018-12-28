@@ -120,7 +120,7 @@ namespace
     T x = 0.0;
     if (std::size(bytes) < sizeof(x))
       throw cxx::msgpack::truncation_error("not enough data to decode json");
-    cxx::codec::read_from(x, bytes);
+    cxx::codec::read_from<T>(cxx::by_ref(x), bytes);
     bytes.remove_prefix(sizeof(x));
     return static_cast<double>(cxx::codec::ntoh(x));
   };

@@ -31,7 +31,7 @@ namespace
     if (std::size(bytes) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     std::uint16_t x = 0;
-    ::cxx::codec::read_from(x, bytes);
+    ::cxx::codec::read_from<std::uint16_t>(cxx::by_ref(x), bytes);
     x = ::cxx::codec::ntoh(x);
     auto const halfbits_to_floatbits = [](std::uint16_t h) -> std::uint32_t {
       std::uint16_t h_exp, h_sig;
@@ -318,7 +318,7 @@ namespace
     if (std::size(bytes) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     T x = 0.0;
-    ::cxx::codec::read_from(x, bytes);
+    ::cxx::codec::read_from<T>(cxx::by_ref(x), bytes);
     double ret = ::cxx::codec::ntoh(x);
     sink(ret);
     bytes.remove_prefix(sizeof(T));
