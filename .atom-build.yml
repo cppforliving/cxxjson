@@ -1,0 +1,6 @@
+cmd: "{PROJECT_PATH}/waf build"
+targets:
+  build:
+    cmd: "{PROJECT_PATH}/waf build"
+  debug:
+    cmd: ". {PROJECT_PATH}/config debug && {PROJECT_PATH}/waf configure"
