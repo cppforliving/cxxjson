@@ -45,14 +45,14 @@ namespace detail
 
   void encode(std::int64_t x, cxx::json::byte_stream& stream) noexcept
   {
-    ::cxx::codec::assure(stream, sizeof(std::int64_t) + 1);
+    ::cxx::codec::assure(cxx::by_ref(stream), sizeof(std::int64_t) + 1);
     if (x < 0) return encode_negative_integer(x, stream);
     encode_positive_integer(static_cast<std::uint64_t>(x), stream);
   }
 
   void encode(cxx::json::byte_stream const& x, cxx::json::byte_stream& stream) noexcept
   {
-    ::cxx::codec::assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
+    ::cxx::codec::assure(cxx::by_ref(stream), std::size(x) + sizeof(std::uint64_t) + 1);
     ::cxx::detail::cbor::initial(encode_positive_integer(std::size(x), stream))->major =
         ::cxx::detail::cbor::initial_byte::type::bytes;
     stream.insert(std::end(stream), std::begin(x), std::end(x));
@@ -60,7 +60,7 @@ namespace detail
 
   void encode(std::string const& x, cxx::json::byte_stream& stream) noexcept
   {
-    ::cxx::codec::assure(stream, std::size(x) + sizeof(std::uint64_t) + 1);
+    ::cxx::codec::assure(cxx::by_ref(stream), std::size(x) + sizeof(std::uint64_t) + 1);
     ::cxx::detail::cbor::initial(encode_positive_integer(std::size(x), stream))->major =
         ::cxx::detail::cbor::initial_byte::type::unicode;
     auto first = reinterpret_cast<cxx::byte const*>(x.data());
@@ -69,7 +69,8 @@ namespace detail
 
   void encode(cxx::json::array const& x, cxx::json::byte_stream& stream) noexcept
   {
-    ::cxx::codec::assure(stream, sizeof(std::uint64_t) + 1 + std::size(x) * sizeof(cxx::json));
+    ::cxx::codec::assure(cxx::by_ref(stream),
+                         sizeof(std::uint64_t) + 1 + std::size(x) * sizeof(cxx::json));
     ::cxx::detail::cbor::initial(encode_positive_integer(std::size(x), stream))->major =
         ::cxx::detail::cbor::initial_byte::type::array;
     for (auto const& item : x) ::detail::encode(item, stream);
@@ -77,7 +78,8 @@ namespace detail
 
   void encode(cxx::json::dictionary const& x, cxx::json::byte_stream& stream) noexcept
   {
-    ::cxx::codec::assure(stream, sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
+    ::cxx::codec::assure(cxx::by_ref(stream),
+                         sizeof(std::uint64_t) + 1 + 2 * std::size(x) * sizeof(cxx::json));
     ::cxx::detail::cbor::initial(encode_positive_integer(std::size(x), stream))->major =
         ::cxx::detail::cbor::initial_byte::type::dictionary;
     for (auto const& [key, value] : x)
@@ -100,7 +102,7 @@ namespace detail
 
   void encode(double d, cxx::json::byte_stream& stream) noexcept
   {
-    ::cxx::codec::assure(stream, sizeof(double) + 1);
+    ::cxx::codec::assure(cxx::by_ref(stream), sizeof(double) + 1);
     d = ::cxx::codec::hton(d);
     auto const* first = static_cast<cxx::byte const*>(static_cast<void const*>(&d));
     stream.emplace_back(cxx::byte(::cxx::detail::cbor::initial_byte::value::ieee_754_double));

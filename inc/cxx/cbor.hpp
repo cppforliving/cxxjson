@@ -1,5 +1,6 @@
 #pragma once
 #include <cxx/json.hpp>
+#include <cxx/by_ref.hpp>
 #include <string_view>
 
 namespace cxx

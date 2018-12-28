@@ -36,7 +36,8 @@ namespace
                             auto sink) {
       auto const size = std::size(x);
       using value_type = typename std::decay_t<decltype(x)>::value_type;
-      ::cxx::codec::assure(*stream, size * sizeof(value_type) + sizeof(std::uint32_t) + 1); // FIXME
+      ::cxx::codec::assure(cxx::by_ref(stream),
+                           size * sizeof(value_type) + sizeof(std::uint32_t) + 1);
 
       stream->emplace_back(cxx::byte(code));
       insert(static_cast<std::uint32_t>(size), cxx::by_ref(stream));
@@ -50,7 +51,7 @@ namespace
       auto const n = static_cast<std::uint64_t>(x);
       auto const code = ::cxx::codec::code((x < 0) ? (~n + 1) : n);
       auto const space = 1u << code;
-      ::cxx::codec::assure(*stream, sizeof(cxx::byte) + space); // FIXME
+      ::cxx::codec::assure(cxx::by_ref(stream), sizeof(cxx::byte) + space);
       stream->emplace_back(cxx::byte(code + ((x < 0) ? consts::negative : consts::positive)));
 
       /// space optimization - adjust number of bytes needed to store a value
@@ -132,7 +133,7 @@ namespace
 
     void encode(double x, cxx::output_parameter<cxx::json::byte_stream> stream)
     {
-      ::cxx::codec::assure(*stream, sizeof(double) + 1); // FIXME
+      ::cxx::codec::assure(cxx::by_ref(stream), sizeof(double) + 1);
       x = ::cxx::codec::hton(x);
       auto const* first = static_cast<cxx::byte const*>(static_cast<void const*>(&x));
       stream->emplace_back(cxx::byte(consts::floating));

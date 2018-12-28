@@ -1,5 +1,6 @@
 #pragma once
 #include "inc/cxx/json.hpp"
+#include "inc/cxx/by_ref.hpp"
 #include <arpa/inet.h>
 
 namespace cxx
@@ -37,18 +38,20 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const append = [](cxx::json::byte_stream& stream,
-                                            cxx::json::byte_stream::size_type const size) {
-      return stream.reserve(stream.capacity() + size);
-    };
+    inline static constexpr auto const append =
+        [](cxx::output_parameter<cxx::json::byte_stream> stream,
+           cxx::json::byte_stream::size_type const size) {
+          return stream->reserve(stream->capacity() + size);
+        };
 
     /**
      *
      */
-    static constexpr auto const assure = [](cxx::json::byte_stream& stream,
-                                            cxx::json::byte_stream::size_type const needed) {
-      if (available(stream) < needed) append(stream, needed);
-    };
+    inline static constexpr auto const assure =
+        [](cxx::output_parameter<cxx::json::byte_stream> stream,
+           cxx::json::byte_stream::size_type const needed) {
+          if (available(stream) < needed) append(cxx::by_ref(stream), needed);
+        };
 
     /**
      *

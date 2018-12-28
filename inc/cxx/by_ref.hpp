@@ -10,6 +10,7 @@ namespace cxx
     using value_type = T;
     using pointer = T*;
     using reference = T&;
+    using const_reference = T const&;
 
     constexpr explicit output_parameter(reference r) noexcept : ptr(std::addressof(r)) {}
     output_parameter() = delete;
@@ -29,6 +30,7 @@ namespace cxx
 
     reference operator*() noexcept { return *ptr; }
     pointer operator->() noexcept { return ptr; }
+    operator const_reference() const noexcept { return *ptr; }
 
   private:
     pointer ptr;
