@@ -14,26 +14,36 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const sum = [](auto const&... x) -> decltype(auto) {
+    inline static constexpr auto const sum =
+        [](auto const&... x) [[gnu::always_inline, gnu::flatten]] -> decltype(auto)
+    {
       return (x + ...);
     };
 
     /**
      *
      */
-    inline static constexpr auto const code = [](std::uint64_t x) {
+    inline static constexpr auto const code =
+        [](std::uint64_t x) [[gnu::always_inline, gnu::flatten]]
+    {
       return 0x3 & sum((x >> 32) != 0, (x >> 16) != 0, (x >> 8) != 0);
     };
 
     /**
      *
      */
-    inline static constexpr auto const space = [](std::uint64_t x) { return 1u << code(x); };
+    inline static constexpr auto const space =
+        [](std::uint64_t x) [[gnu::always_inline, gnu::flatten]]
+    {
+      return 1u << code(x);
+    };
 
     /**
      *
      */
-    inline static constexpr auto const available = [](cxx::json::byte_stream const& stream) {
+    inline static constexpr auto const available =
+        [](cxx::json::byte_stream const& stream) [[gnu::always_inline, gnu::flatten]]
+    {
       return stream.capacity() - std::size(stream);
     };
 
@@ -42,23 +52,27 @@ namespace cxx
      */
     inline static constexpr auto const append =
         [](cxx::output_parameter<cxx::json::byte_stream> stream,
-           cxx::json::byte_stream::size_type const size) {
-          return stream->reserve(stream->capacity() + size);
-        };
+           cxx::json::byte_stream::size_type const size) [[gnu::always_inline, gnu::flatten]]
+    {
+      return stream->reserve(stream->capacity() + size);
+    };
 
     /**
      *
      */
     inline static constexpr auto const assure =
         [](cxx::output_parameter<cxx::json::byte_stream> stream,
-           cxx::json::byte_stream::size_type const needed) {
-          if (available(stream) < needed) append(cxx::by_ref(stream), needed);
-        };
+           cxx::json::byte_stream::size_type const needed) [[gnu::always_inline, gnu::flatten]]
+    {
+      if (available(stream) < needed) append(cxx::by_ref(stream), needed);
+    };
 
     /**
      *
      */
-    inline static constexpr auto const htonll = [](std::uint64_t x) -> std::uint64_t {
+    inline static constexpr auto const htonll =
+        [](std::uint64_t x) [[gnu::always_inline, gnu::flatten]] -> std::uint64_t
+    {
       return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
              htonl(static_cast<std::uint32_t>(x >> 32));
     };
@@ -66,7 +80,9 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const ntohll = [](std::uint64_t x) -> std::uint64_t {
+    inline static constexpr auto const ntohll =
+        [](std::uint64_t x) [[gnu::always_inline, gnu::flatten]] -> std::uint64_t
+    {
       auto const hi = static_cast<std::uint32_t>(x >> 32);
       auto const lo = static_cast<std::uint32_t>(x & 0xffffffff);
       return (static_cast<std::uint64_t>(ntohl(lo)) << 32) | ntohl(hi);
@@ -75,7 +91,9 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const htond = [](double d) -> double {
+    inline static constexpr auto const htond =
+        [](double d) [[gnu::always_inline, gnu::flatten]] -> double
+    {
       static_assert(sizeof(double) == sizeof(std::uint64_t));
       static_assert(alignof(double) == alignof(std::uint64_t));
       auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
@@ -86,7 +104,9 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const ntohf = [](float f) -> float {
+    inline static constexpr auto const ntohf =
+        [](float f) [[gnu::always_inline, gnu::flatten]] -> float
+    {
       static_assert(sizeof(float) == sizeof(std::uint32_t));
       static_assert(alignof(float) == alignof(std::uint32_t));
       auto* pu = static_cast<std::uint32_t*>(static_cast<void*>(&f));
@@ -97,7 +117,9 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const htonf = [](float f) -> float {
+    inline static constexpr auto const htonf =
+        [](float f) [[gnu::always_inline, gnu::flatten]] -> float
+    {
       static_assert(sizeof(float) == sizeof(std::uint32_t));
       static_assert(alignof(float) == alignof(std::uint32_t));
       auto* pu = static_cast<std::uint32_t*>(static_cast<void*>(&f));
@@ -108,7 +130,9 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const ntohd = [](double d) -> double {
+    inline static constexpr auto const ntohd =
+        [](double d) [[gnu::always_inline, gnu::flatten]] -> double
+    {
       static_assert(sizeof(double) == sizeof(std::uint64_t));
       static_assert(alignof(double) == alignof(std::uint64_t));
       auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
@@ -142,17 +166,19 @@ namespace cxx
      *
      */
     template <typename T>
-    inline static constexpr auto const read_from =
-        [](cxx::output_parameter<T> t, cxx::json::byte_view bytes) {
-          auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&*t));
-          std::copy(bytes.data(), bytes.data() + sizeof(T), dest);
-        };
+    inline static constexpr auto const read_from = [
+    ](cxx::output_parameter<T> t, cxx::json::byte_view bytes) [[gnu::always_inline, gnu::flatten]]
+    {
+      auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&*t));
+      std::copy(bytes.data(), bytes.data() + sizeof(T), dest);
+    };
 
     /**
      *
      */
-    inline static constexpr auto const write_to = [](auto const& t,
-                                                     cxx::json::byte_stream::pointer dest) {
+    inline static constexpr auto const write_to =
+        [](auto const& t, cxx::json::byte_stream::pointer dest) [[gnu::always_inline, gnu::flatten]]
+    {
       auto const* first =
           static_cast<cxx::json::byte_stream::const_pointer>(static_cast<void const*>(&t));
       std::copy(first, first + sizeof(t), dest);
@@ -185,7 +211,9 @@ namespace cxx
      *
      */
     template <typename T>
-    inline static constexpr auto const reserved = [](typename T::size_type capa) -> T {
+    inline static constexpr auto const reserved = [](typename T::size_type capa)
+                                                      [[gnu::always_inline, gnu::flatten]] -> T
+    {
       T ret;
       ret.reserve(capa);
       return ret;

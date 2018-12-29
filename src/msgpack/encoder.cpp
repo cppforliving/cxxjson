@@ -22,18 +22,20 @@ namespace
       constexpr static std::int64_t const min_initial = -0x20;
     };
 
-    auto const insert = [](auto x,
-                           cxx::output_parameter<cxx::json::byte_stream> stream) -> decltype(auto) {
+    auto const insert = [](auto x, cxx::output_parameter<cxx::json::byte_stream> stream)
+                            [[gnu::always_inline, gnu::flatten]] -> decltype(auto)
+    {
       using T = std::decay_t<decltype(x)>;
       auto it = stream->insert(stream->end(), sizeof(T), {});
       ::cxx::codec::write_to(::cxx::codec::hton(static_cast<T>(x)), std::addressof(*it));
       return *(--it);
     };
 
-    auto const collect = [](auto const& x,
-                            cxx::output_parameter<cxx::json::byte_stream> stream,
-                            auto code,
-                            auto sink) {
+    auto const collect =
+        [
+        ](auto const& x, cxx::output_parameter<cxx::json::byte_stream> stream, auto code, auto sink)
+            [[gnu::always_inline, gnu::flatten]]
+    {
       auto const size = std::size(x);
       using value_type = typename std::decay_t<decltype(x)>::value_type;
       ::cxx::codec::assure(cxx::by_ref(stream),
@@ -46,7 +48,8 @@ namespace
 
     void encode(cxx::json const&, cxx::output_parameter<cxx::json::byte_stream>);
 
-    cxx::byte& assign(std::int64_t const x, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] cxx::byte& assign(std::int64_t const x,
+                                       cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       auto const n = static_cast<std::uint64_t>(x);
       auto const code = ::cxx::codec::code((x < 0) ? (~n + 1) : n);
@@ -69,7 +72,8 @@ namespace
       }
     }
 
-    cxx::byte& encode(std::int64_t x, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] cxx::byte& encode(std::int64_t x,
+                                       cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       auto const initial_byte = [&x, &stream] {
         if (x < consts::min_initial || x > consts::max_initial) return false;
@@ -81,47 +85,58 @@ namespace
       return assign(x, cxx::by_ref(stream));
     }
 
-    void encode(cxx::json::null_t, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(cxx::json::null_t,
+                                 cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       stream->push_back(cxx::byte(consts::null));
     }
 
-    void encode(bool b, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(bool b, cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       stream->push_back(cxx::byte(b ? consts::True : consts::False));
     }
 
-    void encode(std::string const& x, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(std::string const& x,
+                                 cxx::output_parameter<cxx::json::byte_stream> stream)
     {
-      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out) {
+      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
+          [[gnu::always_inline, gnu::flatten]]
+      {
         auto const first = reinterpret_cast<cxx::byte const*>(y.data());
         out->insert(out->end(), first, first + std::size(y));
       };
       collect(x, cxx::by_ref(stream), consts::string, sink);
     }
 
-    void encode(cxx::json::byte_stream const& x,
-                cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(cxx::json::byte_stream const& x,
+                                 cxx::output_parameter<cxx::json::byte_stream> stream)
     {
-      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out) {
+      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
+          [[gnu::always_inline, gnu::flatten]]
+      {
         auto const first = y.data();
         out->insert(out->end(), first, first + std::size(y));
       };
       collect(x, cxx::by_ref(stream), consts::bin, sink);
     }
 
-    void encode(cxx::json::array const& x, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(cxx::json::array const& x,
+                                 cxx::output_parameter<cxx::json::byte_stream> stream)
     {
-      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out) {
+      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
+          [[gnu::always_inline, gnu::flatten]]
+      {
         for (auto const& value : y) encode(value, cxx::by_ref(out));
       };
       collect(x, cxx::by_ref(stream), consts::array, sink);
     }
 
-    void encode(cxx::json::dictionary const& x,
-                cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(cxx::json::dictionary const& x,
+                                 cxx::output_parameter<cxx::json::byte_stream> stream)
     {
-      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out) {
+      auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
+          [[gnu::always_inline, gnu::flatten]]
+      {
         for (auto const& [key, value] : y)
         {
           encode(key, cxx::by_ref(out));
@@ -131,7 +146,7 @@ namespace
       collect(x, cxx::by_ref(stream), consts::dictionary, sink);
     }
 
-    void encode(double x, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::flatten]] void encode(double x, cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       ::cxx::codec::assure(cxx::by_ref(stream), sizeof(double) + 1);
       x = ::cxx::codec::hton(x);
@@ -140,7 +155,9 @@ namespace
       stream->insert(stream->end(), first, first + sizeof(double));
     }
 
-    void encode(cxx::json const& json, cxx::output_parameter<cxx::json::byte_stream> stream)
+    [[gnu::noinline, gnu::flatten]] void encode(
+        cxx::json const& json,
+        cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       cxx::visit([&stream](auto const& x) { detail::encode(x, cxx::by_ref(stream)); }, json);
     }
