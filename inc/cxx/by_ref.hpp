@@ -29,6 +29,7 @@ namespace cxx
     }
 
     reference operator*() noexcept { return *ptr; }
+    [[ gnu::always_inline ]]
     pointer operator->() noexcept { return ptr; }
     operator const_reference() const noexcept { return *ptr; }
 
