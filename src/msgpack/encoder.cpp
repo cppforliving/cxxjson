@@ -22,19 +22,19 @@ namespace
       constexpr static std::int64_t const min_initial = -0x20;
     };
 
-    auto const insert = [](auto x, cxx::output_parameter<cxx::json::byte_stream> stream)
-                            [[gnu::always_inline, gnu::flatten]] -> decltype(auto)
-    {
+    auto const insert = [](auto x,
+                           cxx::output_parameter<cxx::json::byte_stream> stream) -> decltype(auto) {
       using T = std::decay_t<decltype(x)>;
       auto it = stream->insert(stream->end(), sizeof(T), {});
       ::cxx::codec::write_to(::cxx::codec::hton(static_cast<T>(x)), std::addressof(*it));
       return *(--it);
     };
 
-    auto const collect =
-        [
-        ](auto const& x, cxx::output_parameter<cxx::json::byte_stream> stream, auto code, auto sink)
-            [[gnu::always_inline, gnu::flatten]]
+    auto const collect = [](auto const& x,
+                            cxx::output_parameter<cxx::json::byte_stream> stream,
+                            auto code,
+                            auto sink)
+
     {
       auto const size = std::size(x);
       using value_type = typename std::decay_t<decltype(x)>::value_type;
@@ -100,7 +100,7 @@ namespace
                                  cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
-          [[gnu::always_inline, gnu::flatten]]
+
       {
         auto const first = reinterpret_cast<cxx::byte const*>(y.data());
         out->insert(out->end(), first, first + std::size(y));
@@ -112,7 +112,7 @@ namespace
                                  cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
-          [[gnu::always_inline, gnu::flatten]]
+
       {
         auto const first = y.data();
         out->insert(out->end(), first, first + std::size(y));
@@ -124,7 +124,7 @@ namespace
                                  cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
-          [[gnu::always_inline, gnu::flatten]]
+
       {
         for (auto const& value : y) encode(value, cxx::by_ref(out));
       };
@@ -135,7 +135,7 @@ namespace
                                  cxx::output_parameter<cxx::json::byte_stream> stream)
     {
       auto const sink = [](auto const& y, cxx::output_parameter<cxx::json::byte_stream> out)
-          [[gnu::always_inline, gnu::flatten]]
+
       {
         for (auto const& [key, value] : y)
         {
