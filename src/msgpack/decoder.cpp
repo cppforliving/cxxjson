@@ -116,12 +116,12 @@ namespace
   }
 
   template <typename T>
-  auto const read_double = [](cxx::json::byte_view& bytes) -> double {
+  auto const read_double = [](cxx::output_parameter<cxx::json::byte_view> bytes) -> double {
     T x = 0.0;
-    if (std::size(bytes) < sizeof(x))
+    if (bytes->size() < sizeof(x))
       throw cxx::msgpack::truncation_error("not enough data to decode json");
     cxx::codec::read_from<T>(cxx::by_ref(x), bytes);
-    bytes.remove_prefix(sizeof(x));
+    bytes->remove_prefix(sizeof(x));
     return static_cast<double>(cxx::codec::ntoh(x));
   };
 
@@ -132,7 +132,7 @@ namespace
                              Sink sink,
                              std::size_t)
   {
-    sink(read_double<double>(bytes));
+    sink(read_double<double>(cxx::by_ref(bytes)));
     return bytes;
   }
 
@@ -143,7 +143,7 @@ namespace
                              Sink sink,
                              std::size_t)
   {
-    sink(read_double<float>(bytes));
+    sink(read_double<float>(cxx::by_ref(bytes)));
     return bytes;
   }
 
