@@ -145,7 +145,7 @@ namespace cxx
     inline static constexpr auto const read_from =
         [](cxx::output_parameter<T> t, cxx::json::byte_view bytes) {
           auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&*t));
-          std::copy(bytes.data(), bytes.data() + sizeof(t), dest);
+          std::copy(bytes.data(), bytes.data() + sizeof(T), dest);
         };
 
     /**
