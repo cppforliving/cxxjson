@@ -12,10 +12,7 @@ namespace cxx
     using reference = T&;
     using const_reference = T const&;
 
-    [[gnu::always_inline, gnu::flatten]] constexpr explicit output_parameter(reference r) noexcept
-        : ptr(std::addressof(r))
-    {
-    }
+    constexpr explicit output_parameter(reference r) noexcept : ptr(std::addressof(r)) {}
     output_parameter() = delete;
     output_parameter(T&&) = delete;
     output_parameter(T const&) = delete;
@@ -25,15 +22,15 @@ namespace cxx
     output_parameter& operator=(output_parameter&&) = delete;
 
     template <typename U>
-    [[gnu::always_inline, gnu::flatten]] output_parameter& operator=(U u)
+    output_parameter& operator=(U u)
     {
       *ptr = std::move(u);
       return *this;
     }
 
-    [[gnu::always_inline]] reference operator*() noexcept { return *ptr; }
-    [[gnu::always_inline]] pointer operator->() noexcept { return ptr; }
-    [[gnu::always_inline]] operator const_reference() const noexcept { return *ptr; }
+    reference operator*() noexcept { return *ptr; }
+    pointer operator->() noexcept { return ptr; }
+    operator const_reference() const noexcept { return *ptr; }
 
   private:
     pointer ptr;
