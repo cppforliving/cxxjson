@@ -20,7 +20,6 @@ TEST_CASE("can construct cxx::output_parameter")
   object obj = {42};
   object const other = {13};
   param ref(obj);
-  REQUIRE(std::addressof(obj) == std::addressof(*ref));
   ref->value = 7;
   REQUIRE(obj.value == 7);
   ref = other;

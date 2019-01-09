@@ -144,7 +144,7 @@ namespace cxx
     template <typename T>
     inline static constexpr auto const read_from =
         [](cxx::output_parameter<T> t, cxx::json::byte_view bytes) {
-          auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&*t));
+          auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&t.get()));
           std::copy(bytes.data(), bytes.data() + sizeof(T), dest);
         };
 

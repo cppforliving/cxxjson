@@ -311,6 +311,6 @@ auto ::cxx::msgpack::decode(json::byte_stream const& stream) -> json
 auto ::cxx::msgpack::decode(output_parameter<json::byte_view> bytes) -> json
 {
   cxx::json json;
-  bytes = parse(*bytes, emplace_to(json));
+  bytes = parse(bytes, emplace_to(json));
   return json;
 }
