@@ -26,6 +26,7 @@ def configure(ctx):
     ctx.env.DEFINES = os.environ.get('DEFINES', '').split()
     ctx.load('compiler_cxx')
     ctx.load('gnu_dirs')
+    ctx.load('clang_compilation_database')
     ctx.load('waf_unit_test')
     ctx.msg('Used CXXFLAGS', ' '.join(ctx.env.CXXFLAGS))
     ctx.msg('Used LINKFLAGS', ' '.join(ctx.env.LINKFLAGS))
