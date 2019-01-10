@@ -116,7 +116,7 @@ namespace
   }
 
   template <typename T>
-  auto const read_double = [](cxx::output_parameter<cxx::json::byte_view> bytes) -> double {
+  auto const read_double = [](cxx::by_ref<cxx::json::byte_view> bytes) -> double {
     T x = 0.0;
     if (bytes->size() < sizeof(x))
       throw cxx::msgpack::truncation_error("not enough data to decode json");
@@ -308,7 +308,7 @@ auto ::cxx::msgpack::decode(json::byte_stream const& stream) -> json
   return decode(by_ref(data));
 }
 
-auto ::cxx::msgpack::decode(output_parameter<json::byte_view> bytes) -> json
+auto ::cxx::msgpack::decode(by_ref<json::byte_view> bytes) -> json
 {
   cxx::json json;
   bytes = parse(bytes, emplace_to(json));

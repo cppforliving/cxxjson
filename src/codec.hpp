@@ -40,20 +40,18 @@ namespace cxx
     /**
      *
      */
-    inline static constexpr auto const append =
-        [](cxx::output_parameter<cxx::json::byte_stream> stream,
-           cxx::json::byte_stream::size_type const size) {
-          return stream->reserve(stream->capacity() + size);
-        };
+    inline static constexpr auto const append = [](cxx::by_ref<cxx::json::byte_stream> stream,
+                                                   cxx::json::byte_stream::size_type const size) {
+      return stream->reserve(stream->capacity() + size);
+    };
 
     /**
      *
      */
-    inline static constexpr auto const assure =
-        [](cxx::output_parameter<cxx::json::byte_stream> stream,
-           cxx::json::byte_stream::size_type const needed) {
-          if (available(stream) < needed) append(cxx::by_ref(stream), needed);
-        };
+    inline static constexpr auto const assure = [](cxx::by_ref<cxx::json::byte_stream> stream,
+                                                   cxx::json::byte_stream::size_type const needed) {
+      if (available(stream) < needed) append(cxx::by_ref(stream), needed);
+    };
 
     /**
      *
@@ -143,7 +141,7 @@ namespace cxx
      */
     template <typename T>
     inline static constexpr auto const read_from =
-        [](cxx::output_parameter<T> t, cxx::json::byte_view bytes) {
+        [](cxx::by_ref<T> t, cxx::json::byte_view bytes) {
           auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&t.get()));
           std::copy(bytes.data(), bytes.data() + sizeof(T), dest);
         };

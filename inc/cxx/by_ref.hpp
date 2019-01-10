@@ -4,52 +4,38 @@
 namespace cxx
 {
   template <typename T>
-  struct output_parameter {
+  struct by_ref {
     static_assert(!std::is_reference_v<T>);
     static_assert(!std::is_const_v<T>);
 
-    constexpr explicit output_parameter(T& r) noexcept : ptr(std::addressof(r)) {}
-    output_parameter() = delete;
-    output_parameter(T&&) = delete;
-    output_parameter(T const&) = delete;
-    output_parameter(output_parameter const&) = delete;
-    output_parameter(output_parameter&&) = delete;
-    output_parameter& operator=(output_parameter const&) = delete;
-    output_parameter& operator=(output_parameter&&) = delete;
+    by_ref() = delete;
+    by_ref(T&&) = delete;
+    by_ref(T const&) = delete;
+    by_ref(by_ref&&) = delete;
+    by_ref& operator=(by_ref const&) = delete;
+    by_ref& operator=(by_ref&&) = delete;
 
+    constexpr explicit by_ref(T& r) noexcept : ptr(std::addressof(r)) {}
+    constexpr explicit by_ref(by_ref const&) = default;
+    ~by_ref() = default;
     template <typename U>
-    output_parameter& operator=(U u)
+    constexpr by_ref& operator=(U u)
     {
       *ptr = std::move(u);
       return *this;
     }
 
-    T& get() noexcept { return *ptr; }
-    constexpr T* data() noexcept { return ptr; }
-    constexpr T* operator->() noexcept { return data(); }
+    constexpr T& get() noexcept { return *ptr; }
+    constexpr T* operator->() noexcept { return ptr; }
     constexpr operator T const&() const noexcept { return *ptr; }
-
-    template <typename U>
-    friend output_parameter<U> make_output_parameter(output_parameter<U>&) noexcept;
-
-    template <typename U>
-    friend output_parameter<U> make_output_parameter(U& u) noexcept;
 
   private:
     T* ptr;
   };
 
-  template <typename U>
-  output_parameter<U> make_output_parameter(output_parameter<U>& u) noexcept
-  {
-    return output_parameter<U>(*u.ptr);
-  }
+  template <typename T>
+  by_ref(T&)->by_ref<T>;
 
-  template <typename U>
-  output_parameter<U> make_output_parameter(U& u) noexcept
-  {
-    return output_parameter<U>(u);
-  }
-
-  inline auto const by_ref = [](auto& ref) { return cxx::make_output_parameter(ref); };
+  template <typename T>
+  by_ref(by_ref<T>&)->by_ref<T>;
 } // namespace cxx
