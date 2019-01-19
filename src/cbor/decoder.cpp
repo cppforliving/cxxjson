@@ -415,12 +415,12 @@ namespace
 auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 {
   cxx::json::byte_view data(stream.data(), std::size(stream));
-  return decode(data);
+  return decode(cxx::by_ref(data));
 }
 
-auto ::cxx::cbor::decode(json::byte_view& bytes) -> json
+auto ::cxx::cbor::decode(cxx::by_ref<json::byte_view> bytes) -> json
 {
   cxx::json json;
-  bytes = parse(bytes, emplace_to<cxx::json>(cxx::by_ref(json)));
+  bytes.get() = parse(bytes.c_ref(), emplace_to<cxx::json>(cxx::by_ref(json)));
   return json;
 }

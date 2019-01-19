@@ -54,13 +54,13 @@ TEST_CASE("cbor can decode positive integers")
   {
     auto const bytes = "171818191919"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    cxx::json json = cbor::decode(leftovers);
+    cxx::json json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == 0x17);
     REQUIRE(std::size(leftovers) == 5);
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == 0x18);
     REQUIRE(std::size(leftovers) == 3);
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == 0x1919);
     REQUIRE(std::empty(leftovers));
   }
@@ -88,11 +88,11 @@ TEST_CASE("cbor can decode negative integers")
   {
     auto const bytes = "37381838ff"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    cxx::json json = cbor::decode(leftovers);
+    cxx::json json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == -0x18);
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == -0x19);
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == -0x0100);
   }
 }
@@ -113,11 +113,11 @@ TEST_CASE("cbor can decode byte_stream")
   {
     auto const bytes = "411158022233590003445566"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    cxx::json json = cbor::decode(leftovers);
+    cxx::json json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == "11"_hex);
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == "2233"_hex);
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == "445566"_hex);
   }
 }
@@ -145,11 +145,11 @@ TEST_CASE("cbor can decode unicode")
   {
     auto const bytes = "656c6f72656d644945544662c3bc"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    cxx::json json = cbor::decode(leftovers);
+    cxx::json json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == "lorem");
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == "IETF");
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == "ü");
   }
 }
@@ -185,14 +185,14 @@ TEST_CASE("cbor can decode arrays")
   {
     auto const bytes = "811782181862c3bc9803656c6f72656d2020"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    cxx::json json = cbor::decode(leftovers);
+    cxx::json json = cbor::decode(cxx::by_ref(leftovers));
     {
       cxx::json::array const array = {0x17};
       REQUIRE(json == array);
     }
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == cxx::json::array({0x18, "ü"}));
-    json = cbor::decode(leftovers);
+    json = cbor::decode(cxx::by_ref(leftovers));
     REQUIRE(json == cxx::json::array({"lorem", -0x01, -0x01}));
   }
 }
@@ -252,9 +252,10 @@ TEST_CASE("cbor can decode dictionaries")
   {
     auto const bytes = "a161611818a2616218196163181aa36164181b6165181c6166181d"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"a", 0x18}}));
-    REQUIRE(cbor::decode(leftovers) == cxx::json::dictionary({{"b", 0x19}, {"c", 0x1a}}));
-    REQUIRE(cbor::decode(leftovers) ==
+    REQUIRE(cbor::decode(cxx::by_ref(leftovers)) == cxx::json::dictionary({{"a", 0x18}}));
+    REQUIRE(cbor::decode(cxx::by_ref(leftovers)) ==
+            cxx::json::dictionary({{"b", 0x19}, {"c", 0x1a}}));
+    REQUIRE(cbor::decode(cxx::by_ref(leftovers)) ==
             cxx::json::dictionary({{"d", 0x1b}, {"e", 0x1c}, {"f", 0x1d}}));
   }
 }
@@ -272,9 +273,9 @@ TEST_CASE("cbor can decode simple special values")
   {
     auto const bytes = "f4f8f5f6"_hex;
     cxx::json::byte_view leftovers(bytes.data(), std::size(bytes));
-    REQUIRE(cbor::decode(leftovers) == false);
-    REQUIRE(cbor::decode(leftovers) == true);
-    REQUIRE(cbor::decode(leftovers) == cxx::json::null);
+    REQUIRE(cbor::decode(cxx::by_ref(leftovers)) == false);
+    REQUIRE(cbor::decode(cxx::by_ref(leftovers)) == true);
+    REQUIRE(cbor::decode(cxx::by_ref(leftovers)) == cxx::json::null);
   }
 }
 

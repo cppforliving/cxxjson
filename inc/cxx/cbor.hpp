@@ -26,6 +26,6 @@ namespace cxx
     static constexpr std::size_t const max_nesting = 0x3f;
     static json::byte_stream encode(json const&) noexcept;
     static json decode(json::byte_stream const&);
-    static json decode(json::byte_view&);
+    static json decode(cxx::by_ref<json::byte_view>);
   };
 } // namespace cxx
