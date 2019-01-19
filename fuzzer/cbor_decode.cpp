@@ -11,7 +11,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
   {
     while (!std::empty(bytes))
     {
-      auto const json = cxx::cbor::decode(bytes);
+      auto const json = cxx::cbor::decode(cxx::by_ref(bytes));
       cxx::cbor::encode(json);
     }
   } catch (cxx::cbor::error const&)

@@ -27,11 +27,13 @@ namespace
   template <::cxx::codec::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
 
-  auto const read_half_float = [](cxx::json::byte_view& bytes, auto sink) {
-    if (std::size(bytes) < sizeof(std::uint16_t))
+  template <typename Sink>
+  [[gnu::flatten]] void read_half_float(cxx::by_ref<cxx::json::byte_view> bytes, Sink sink)
+  {
+    if (std::size(bytes.c_ref()) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     std::uint16_t x = 0;
-    ::cxx::codec::read_from(x, bytes);
+    ::cxx::codec::read_from<std::uint16_t>(cxx::by_ref(x), bytes.c_ref());
     x = ::cxx::codec::ntoh(x);
     auto const halfbits_to_floatbits = [](std::uint16_t h) -> std::uint32_t {
       std::uint16_t h_exp, h_sig;
@@ -74,8 +76,8 @@ namespace
     u.uint = halfbits_to_floatbits(x);
     double d = u.floating;
     sink(d);
-    bytes.remove_prefix(sizeof(std::uint16_t));
-  };
+    bytes->remove_prefix(sizeof(std::uint16_t));
+  }
 
   template <typename Sink>
   cxx::json::byte_view parse(cxx::json::byte_view, Sink, std::size_t = cxx::cbor::max_nesting);
@@ -130,7 +132,7 @@ namespace
   }
 
   template <typename Sink>
-  cxx::json::byte_view chunk(cxx::byte byte, cxx::json::byte_view bytes, Sink sink)
+  [[gnu::flatten]] cxx::json::byte_view chunk(cxx::byte byte, cxx::json::byte_view bytes, Sink sink)
   {
     std::size_t const size = [&] {
       std::size_t n = 0;
@@ -179,8 +181,11 @@ namespace
       return chunk(byte, bytes, sink);
   }
 
-  template <typename Stream>
-  auto const merge_to = [](std::list<cxx::json::byte_view> chunks, std::size_t length, auto sink) {
+  template <typename Stream, typename Sink>
+  [[gnu::flatten]] void merge_to(std::list<cxx::json::byte_view> chunks,
+                                 std::size_t length,
+                                 Sink sink)
+  {
     Stream stream;
     stream.reserve(length);
     for (auto const& item : chunks)
@@ -189,7 +194,7 @@ namespace
       stream.insert(std::end(stream), first, first + std::size(item));
     }
     sink(std::move(stream));
-  };
+  }
 
   template <typename Sink>
   cxx::json::byte_view parse(tag_t<initial_byte::type::unicode>,
@@ -208,20 +213,21 @@ namespace
     return parse(tag<initial_byte::type::bytes>, byte, bytes, adapter);
   }
 
-  auto const emplace_to = [](auto& target, std::string_view key = std::string_view()) {
-    using target_t = std::decay_t<decltype(target)>;
-    using key_t = cxx::json::dictionary::key_type;
-    auto impl = [&target, key](auto&& x) {
+  template <typename T>
+  [[gnu::flatten]] auto emplace_to(cxx::by_ref<T> target, std::string_view key = std::string_view())
+  {
+    using key_type = cxx::json::dictionary::key_type;
+    auto impl = [ref = cxx::by_ref(target), key](auto&& x) {
       (void)key;
-      if constexpr (std::is_same_v<target_t, cxx::json::array>)
-      { target.emplace_back(std::forward<decltype(x)>(x)); }
-      else if constexpr (std::is_same_v<target_t, cxx::json::dictionary>)
+      if constexpr (std::is_same_v<T, cxx::json::array>)
+      { ref->emplace_back(std::forward<decltype(x)>(x)); }
+      else if constexpr (std::is_same_v<T, cxx::json::dictionary>)
       {
-        target.try_emplace(key_t(key), std::forward<decltype(x)>(x));
+        ref->try_emplace(key_type(key), std::forward<decltype(x)>(x));
       }
-      else if constexpr (std::is_same_v<target_t, cxx::json>)
+      else if constexpr (std::is_same_v<T, cxx::json>)
       {
-        target = std::forward<decltype(x)>(x);
+        ref.get() = std::forward<decltype(x)>(x);
       }
       else
       {
@@ -236,7 +242,7 @@ namespace
           merge_to<cxx::json::byte_stream>(chunks, length, impl);
         },
         impl};
-  };
+  }
 
   template <typename Collection, typename Sink, typename Collector>
   cxx::json::byte_view collect(cxx::byte byte,
@@ -258,7 +264,7 @@ namespace
       {
         if (std::size(col) == cxx::cbor::max_size)
           throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
-        collector(bytes, col, level);
+        collector(cxx::by_ref(bytes), cxx::by_ref(col), level);
       }
       bytes.remove_prefix(1);
     }
@@ -271,7 +277,7 @@ namespace
       if (size > cxx::cbor::max_size)
         throw cxx::cbor::unsupported("number of elements exceeds implementation limit");
       if constexpr (has_reserve_v<Collection>) col.reserve(size);
-      while (size--) collector(bytes, col, level);
+      while (size--) collector(cxx::by_ref(bytes), cxx::by_ref(col), level);
     }
     sink(std::move(col));
     return bytes;
@@ -284,8 +290,10 @@ namespace
                              Sink sink,
                              std::size_t level)
   {
-    auto const collector = [](auto& data, auto& collection, auto nesting) {
-      data = parse(data, emplace_to(collection), nesting);
+    auto const collector = [](cxx::by_ref<cxx::json::byte_view> data,
+                              cxx::by_ref<cxx::json::array> collection, auto nesting) {
+      data.get() =
+          parse(data.c_ref(), emplace_to<cxx::json::array>(cxx::by_ref(collection)), nesting);
     };
     return collect<cxx::json::array>(byte, bytes, sink, level, collector);
   }
@@ -297,31 +305,33 @@ namespace
                              Sink sink,
                              std::size_t level)
   {
-    auto const collector = [](auto& data, auto& collection, auto nesting) {
-      if (std::size(data) < 2)
+    auto const collector = [](cxx::by_ref<cxx::json::byte_view> data,
+                              cxx::by_ref<cxx::json::dictionary> collection, auto nesting) {
+      if (std::size(data.c_ref()) < 2)
         throw cxx::cbor::truncation_error("not enough data to decode dictionary key");
-      auto const init = data.front();
-      data.remove_prefix(1);
+      auto const init = data->front();
+      data->remove_prefix(1);
       if (cxx::detail::cbor::initial(init)->major != initial_byte::type::unicode)
         throw cxx::cbor::unsupported(
             "dictionary keys of type different thant unicode are not supported");
       std::string_view key;
-      data = parse(tag<initial_byte::type::unicode>, init, data,
+      data = parse(tag<initial_byte::type::unicode>, init, data.c_ref(),
                    [&key](std::string_view x) { key = x; });
-      data = parse(data, emplace_to(collection, key), nesting);
+      data = parse(data.c_ref(), emplace_to<cxx::json::dictionary>(cxx::by_ref(collection), key),
+                   nesting);
     };
     return collect<cxx::json::dictionary>(byte, bytes, sink, level, collector);
   }
 
   template <typename T>
-  auto const floating_point_value = [](cxx::json::byte_view& bytes, auto sink) {
-    if (std::size(bytes) < sizeof(T))
+  auto const floating_point_value = [](cxx::by_ref<cxx::json::byte_view> bytes, auto sink) {
+    if (std::size(bytes.c_ref()) < sizeof(T))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     T x = 0.0;
-    ::cxx::codec::read_from(x, bytes);
+    ::cxx::codec::read_from<T>(cxx::by_ref(x), bytes.c_ref());
     double ret = ::cxx::codec::ntoh(x);
     sink(ret);
-    bytes.remove_prefix(sizeof(T));
+    bytes->remove_prefix(sizeof(T));
   };
 
   template <typename Sink>
@@ -366,13 +376,13 @@ namespace
         bytes.remove_prefix(1);
         break;
       case initial_byte::value::ieee_754_half:
-        read_half_float(bytes, sink);
+        read_half_float(cxx::by_ref(bytes), sink);
         break;
       case initial_byte::value::ieee_754_single:
-        floating_point_value<float>(bytes, sink);
+        floating_point_value<float>(cxx::by_ref(bytes), sink);
         break;
       case initial_byte::value::ieee_754_double:
-        floating_point_value<double>(bytes, sink);
+        floating_point_value<double>(cxx::by_ref(bytes), sink);
         break;
       default:
         throw cxx::cbor::unsupported("decoding given type is not yet supported");
@@ -411,12 +421,12 @@ namespace
 auto ::cxx::cbor::decode(json::byte_stream const& stream) -> json
 {
   cxx::json::byte_view data(stream.data(), std::size(stream));
-  return decode(data);
+  return decode(cxx::by_ref(data));
 }
 
-auto ::cxx::cbor::decode(json::byte_view& bytes) -> json
+auto ::cxx::cbor::decode(cxx::by_ref<json::byte_view> bytes) -> json
 {
   cxx::json json;
-  bytes = parse(bytes, emplace_to(json));
+  bytes.get() = parse(bytes.c_ref(), emplace_to<cxx::json>(cxx::by_ref(json)));
   return json;
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "inc/cxx/json.hpp"
+#include "inc/cxx/by_ref.hpp"
 #include <arpa/inet.h>
 
 namespace cxx
@@ -13,47 +14,49 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const sum = [](auto const&... x) -> decltype(auto) { return (x + ...); };
+    inline static constexpr auto const sum = [](auto const&... x) -> decltype(auto) {
+      return (x + ...);
+    };
 
     /**
      *
      */
-    static constexpr auto const code = [](std::uint64_t x) {
+    inline static constexpr auto const code = [](std::uint64_t x) {
       return 0x3 & sum((x >> 32) != 0, (x >> 16) != 0, (x >> 8) != 0);
     };
 
     /**
      *
      */
-    static constexpr auto const space = [](std::uint64_t x) { return 1u << code(x); };
+    inline static constexpr auto const space = [](std::uint64_t x) { return 1u << code(x); };
 
     /**
      *
      */
-    static constexpr auto const available = [](cxx::json::byte_stream const& stream) {
+    inline static constexpr auto const available = [](cxx::json::byte_stream const& stream) {
       return stream.capacity() - std::size(stream);
     };
 
     /**
      *
      */
-    static constexpr auto const append = [](cxx::json::byte_stream& stream,
-                                            cxx::json::byte_stream::size_type const size) {
-      return stream.reserve(stream.capacity() + size);
+    inline static constexpr auto const append = [](cxx::by_ref<cxx::json::byte_stream> stream,
+                                                   cxx::json::byte_stream::size_type const size) {
+      return stream->reserve(stream->capacity() + size);
     };
 
     /**
      *
      */
-    static constexpr auto const assure = [](cxx::json::byte_stream& stream,
-                                            cxx::json::byte_stream::size_type const needed) {
-      if (available(stream) < needed) append(stream, needed);
+    inline static constexpr auto const assure = [](cxx::by_ref<cxx::json::byte_stream> stream,
+                                                   cxx::json::byte_stream::size_type const needed) {
+      if (available(stream.c_ref()) < needed) append(cxx::by_ref(stream), needed);
     };
 
     /**
      *
      */
-    static constexpr auto const htonll = [](std::uint64_t x) -> std::uint64_t {
+    inline static constexpr auto const htonll = [](std::uint64_t x) -> std::uint64_t {
       return (static_cast<std::uint64_t>(htonl(static_cast<std::uint32_t>(x & 0xffffffff))) << 32) |
              htonl(static_cast<std::uint32_t>(x >> 32));
     };
@@ -61,7 +64,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const ntohll = [](std::uint64_t x) -> std::uint64_t {
+    inline static constexpr auto const ntohll = [](std::uint64_t x) -> std::uint64_t {
       auto const hi = static_cast<std::uint32_t>(x >> 32);
       auto const lo = static_cast<std::uint32_t>(x & 0xffffffff);
       return (static_cast<std::uint64_t>(ntohl(lo)) << 32) | ntohl(hi);
@@ -70,7 +73,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const htond = [](double d) -> double {
+    inline static constexpr auto const htond = [](double d) -> double {
       static_assert(sizeof(double) == sizeof(std::uint64_t));
       static_assert(alignof(double) == alignof(std::uint64_t));
       auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
@@ -81,7 +84,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const ntohf = [](float f) -> float {
+    inline static constexpr auto const ntohf = [](float f) -> float {
       static_assert(sizeof(float) == sizeof(std::uint32_t));
       static_assert(alignof(float) == alignof(std::uint32_t));
       auto* pu = static_cast<std::uint32_t*>(static_cast<void*>(&f));
@@ -92,7 +95,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const htonf = [](float f) -> float {
+    inline static constexpr auto const htonf = [](float f) -> float {
       static_assert(sizeof(float) == sizeof(std::uint32_t));
       static_assert(alignof(float) == alignof(std::uint32_t));
       auto* pu = static_cast<std::uint32_t*>(static_cast<void*>(&f));
@@ -103,7 +106,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const ntohd = [](double d) -> double {
+    inline static constexpr auto const ntohd = [](double d) -> double {
       static_assert(sizeof(double) == sizeof(std::uint64_t));
       static_assert(alignof(double) == alignof(std::uint64_t));
       auto* pu = static_cast<std::uint64_t*>(static_cast<void*>(&d));
@@ -114,7 +117,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const ntoh =
+    inline static constexpr auto const ntoh =
         cxx::overload{[](std::uint8_t x) -> std::uint8_t { return x; },
                       [](std::uint16_t x) -> std::uint16_t { return ntohs(x); },
                       [](std::uint32_t x) -> std::uint32_t { return ntohl(x); },
@@ -125,7 +128,7 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const hton =
+    inline static constexpr auto const hton =
         cxx::overload{[](std::uint8_t x) -> std::uint8_t { return x; },
                       [](std::uint16_t x) -> std::uint16_t { return htons(x); },
                       [](std::uint32_t x) -> std::uint32_t { return htonl(x); },
@@ -136,15 +139,18 @@ namespace cxx
     /**
      *
      */
-    static constexpr auto const read_from = [](auto& t, cxx::json::byte_view bytes) {
-      auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&t));
-      std::copy(bytes.data(), bytes.data() + sizeof(t), dest);
-    };
+    template <typename T>
+    inline static constexpr auto const read_from =
+        [](cxx::by_ref<T> t, cxx::json::byte_view bytes) {
+          auto* dest = static_cast<cxx::byte*>(static_cast<void*>(&t.get()));
+          std::copy(bytes.data(), bytes.data() + sizeof(T), dest);
+        };
 
     /**
      *
      */
-    static constexpr auto const write_to = [](auto const& t, cxx::json::byte_stream::pointer dest) {
+    inline static constexpr auto const write_to = [](auto const& t,
+                                                     cxx::json::byte_stream::pointer dest) {
       auto const* first =
           static_cast<cxx::json::byte_stream::const_pointer>(static_cast<void const*>(&t));
       std::copy(first, first + sizeof(t), dest);
@@ -154,7 +160,7 @@ namespace cxx
      *
      */
     template <typename T>
-    static constexpr auto const base_type_impl = [] {
+    inline static constexpr auto const base_type_impl = [] {
       if constexpr (std::is_enum_v<T>) { return std::underlying_type_t<T>{}; }
       else
       {
@@ -177,31 +183,31 @@ namespace cxx
      *
      */
     template <typename T>
-    static constexpr auto const reserved = [](typename T::size_type capa) -> T {
+    inline static constexpr auto const reserved = [](typename T::size_type capa) -> T {
       T ret;
       ret.reserve(capa);
       return ret;
     };
 
     template <std::size_t S>
-    static constexpr auto const nbtoh = [](cxx::json::byte_view bytes) -> std::uint64_t {
+    inline static constexpr auto const nbtoh = [](cxx::json::byte_view bytes) -> std::uint64_t {
       if constexpr (S == sizeof(std::uint8_t)) { return static_cast<std::uint64_t>(bytes.front()); }
       else if constexpr (S == sizeof(std::uint16_t))
       {
         std::uint16_t x;
-        read_from(x, bytes);
+        read_from<std::uint16_t>(cxx::by_ref(x), bytes);
         return ntoh(x);
       }
       else if constexpr (S == sizeof(std::uint32_t))
       {
         std::uint32_t x;
-        read_from(x, bytes);
+        read_from<std::uint32_t>(cxx::by_ref(x), bytes);
         return ntoh(x);
       }
       else if constexpr (S == sizeof(std::uint64_t))
       {
         std::uint64_t x;
-        read_from(x, bytes);
+        read_from<std::uint64_t>(cxx::by_ref(x), bytes);
         return ntoh(x);
       }
     };
