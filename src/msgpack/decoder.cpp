@@ -39,7 +39,7 @@ namespace
   using Int = std::conditional_t<isSigned, std::make_signed_t<T>, std::make_unsigned_t<T>>;
 
   template <bool isSigned>
-  auto read_int64_t(std::size_t const space, cxx::json::byte_view const bytes)
+  [[gnu::flatten]] auto read_int64_t(std::size_t const space, cxx::json::byte_view const bytes)
       -> Int<isSigned, std::int64_t>
   {
     if (std::size(bytes) < space)
@@ -61,18 +61,20 @@ namespace
     }
   }
 
-  auto const is_string = [](cxx::codec::numbyte const init) {
+  [[gnu::flatten]] bool is_string(cxx::codec::numbyte const init)
+  {
     return ((init & 0xe0) == 0xa0) || (init == 0xd9) || (init == 0xda) || (init == 0xdb);
-  };
+  }
 
-  auto const string_size = [](cxx::codec::numbyte const init,
-                              cxx::by_ref<cxx::json::byte_view> leftovers) -> std::size_t {
+  [[gnu::flatten]] auto string_size(cxx::codec::numbyte const init,
+                                    cxx::by_ref<cxx::json::byte_view> leftovers) -> std::size_t
+  {
     if ((init & 0xe0) == 0xa0) return init & 0x1f;
     std::size_t const space = 1u << (init - 0xd9);
     auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers.c_ref()));
     leftovers->remove_prefix(space);
     return s;
-  };
+  }
 
   template <typename Sink>
   cxx::json::byte_view parse(quote<std::uint64_t>,
@@ -116,14 +118,15 @@ namespace
   }
 
   template <typename T>
-  auto const read_double = [](cxx::by_ref<cxx::json::byte_view> bytes) -> double {
+  [[gnu::flatten]] auto read_double(cxx::by_ref<cxx::json::byte_view> bytes) -> double
+  {
     T x = 0.0;
     if (bytes->size() < sizeof(x))
       throw cxx::msgpack::truncation_error("not enough data to decode json");
     cxx::codec::read_from<T>(cxx::by_ref(x), bytes.c_ref());
     bytes->remove_prefix(sizeof(x));
     return static_cast<double>(cxx::codec::ntoh(x));
-  };
+  }
 
   template <typename Sink>
   cxx::json::byte_view parse(quote<double>,
