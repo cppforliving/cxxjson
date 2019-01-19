@@ -8,20 +8,20 @@ namespace
                              Sink,
                              std::size_t = ::cxx::codec::max_nesting);
 
-  auto const emplace_to = [](auto& target, std::string_view key = std::string_view()) {
-    using target_t = std::decay_t<decltype(target)>;
-    using key_t = cxx::json::dictionary::key_type;
-    return [&target, key](auto&& x) {
+  template <typename T>
+  auto const emplace_to = [](cxx::by_ref<T> target, std::string_view key = std::string_view()) {
+    using key_type = cxx::json::dictionary::key_type;
+    return [ref = cxx::by_ref(target), key](auto&& x) {
       (void)key;
-      if constexpr (std::is_same_v<target_t, cxx::json::array>)
-      { target.emplace_back(std::forward<decltype(x)>(x)); }
-      else if constexpr (std::is_same_v<target_t, cxx::json::dictionary>)
+      if constexpr (std::is_same_v<T, cxx::json::array>)
+      { ref->emplace_back(std::forward<decltype(x)>(x)); }
+      else if constexpr (std::is_same_v<T, cxx::json::dictionary>)
       {
-        target.try_emplace(key_t(key), std::forward<decltype(x)>(x));
+        ref->try_emplace(key_type(key), std::forward<decltype(x)>(x));
       }
-      else if constexpr (std::is_same_v<target_t, cxx::json>)
+      else if constexpr (std::is_same_v<T, cxx::json>)
       {
-        target = std::forward<decltype(x)>(x);
+        ref.get() = std::forward<decltype(x)>(x);
       }
       else
       {
@@ -66,11 +66,11 @@ namespace
   };
 
   auto const string_size = [](cxx::codec::numbyte const init,
-                              cxx::json::byte_view& leftovers) -> std::size_t {
+                              cxx::by_ref<cxx::json::byte_view> leftovers) -> std::size_t {
     if ((init & 0xe0) == 0xa0) return init & 0x1f;
     std::size_t const space = 1u << (init - 0xd9);
-    auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers));
-    leftovers.remove_prefix(space);
+    auto const s = static_cast<std::size_t>(read_int64_t<false>(space, leftovers.c_ref()));
+    leftovers->remove_prefix(space);
     return s;
   };
 
@@ -108,7 +108,7 @@ namespace
                              Sink sink,
                              std::size_t)
   {
-    std::size_t const size = string_size(init, bytes);
+    std::size_t const size = string_size(init, cxx::by_ref(bytes));
     if (std::size(bytes) < size)
       throw cxx::msgpack::truncation_error("not enough data to decode json");
     sink(std::string_view(reinterpret_cast<std::string_view::const_pointer>(bytes.data()), size));
@@ -120,7 +120,7 @@ namespace
     T x = 0.0;
     if (bytes->size() < sizeof(x))
       throw cxx::msgpack::truncation_error("not enough data to decode json");
-    cxx::codec::read_from<T>(cxx::by_ref(x), bytes);
+    cxx::codec::read_from<T>(cxx::by_ref(x), bytes.c_ref());
     bytes->remove_prefix(sizeof(x));
     return static_cast<double>(cxx::codec::ntoh(x));
   };
@@ -188,7 +188,8 @@ namespace
       throw cxx::msgpack::truncation_error("not enough data to decode json");
     cxx::json::array array;
     array.reserve(size);
-    while (size--) { bytes = parse(bytes, emplace_to(array), level); }
+    while (size--)
+    { bytes = parse(bytes, emplace_to<cxx::json::array>(cxx::by_ref(array)), level); }
     sink(std::move(array));
     return bytes;
   }
@@ -216,13 +217,13 @@ namespace
       auto const first = static_cast<cxx::codec::numbyte>(bytes.front());
       if (!is_string(first)) throw ::cxx::msgpack::unsupported("only string keys are supported");
       bytes.remove_prefix(sizeof(first));
-      auto const key_size = string_size(first, bytes);
+      auto const key_size = string_size(first, cxx::by_ref(bytes));
       if (std::size(bytes) < key_size)
         throw cxx::msgpack::truncation_error("not enough data to decode json");
       std::string_view key{reinterpret_cast<std::string_view::const_pointer>(bytes.data()),
                            key_size};
       bytes.remove_prefix(key_size);
-      bytes = parse(bytes, emplace_to(dict, key), level);
+      bytes = parse(bytes, emplace_to<cxx::json::dictionary>(cxx::by_ref(dict), key), level);
     }
     sink(std::move(dict));
     return bytes;
@@ -311,6 +312,6 @@ auto ::cxx::msgpack::decode(json::byte_stream const& stream) -> json
 auto ::cxx::msgpack::decode(by_ref<json::byte_view> bytes) -> json
 {
   cxx::json json;
-  bytes = parse(bytes, emplace_to(json));
+  bytes = parse(bytes.c_ref(), emplace_to<cxx::json>(cxx::by_ref(json)));
   return json;
 }

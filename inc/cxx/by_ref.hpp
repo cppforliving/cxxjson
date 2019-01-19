@@ -16,7 +16,7 @@ namespace cxx
     by_ref& operator=(by_ref&&) = delete;
 
     constexpr explicit by_ref(T& r) noexcept : ptr(std::addressof(r)) {}
-    constexpr explicit by_ref(by_ref const&) = default;
+    constexpr explicit by_ref(by_ref const&) noexcept = default;
     ~by_ref() = default;
     template <typename U>
     constexpr by_ref& operator=(U u)
@@ -25,9 +25,10 @@ namespace cxx
       return *this;
     }
 
-    constexpr T& get() noexcept { return *ptr; }
-    constexpr T* operator->() noexcept { return ptr; }
-    constexpr operator T const&() const noexcept { return *ptr; }
+    constexpr T& get() const noexcept { return *ptr; }
+    constexpr T* operator->() const noexcept { return ptr; }
+    constexpr T const& c_ref() const noexcept { return *ptr; }
+    constexpr operator T const&() const noexcept { return c_ref(); }
 
   private:
     T* ptr;

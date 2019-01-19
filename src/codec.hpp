@@ -50,7 +50,7 @@ namespace cxx
      */
     inline static constexpr auto const assure = [](cxx::by_ref<cxx::json::byte_stream> stream,
                                                    cxx::json::byte_stream::size_type const needed) {
-      if (available(stream) < needed) append(cxx::by_ref(stream), needed);
+      if (available(stream.c_ref()) < needed) append(cxx::by_ref(stream), needed);
     };
 
     /**
