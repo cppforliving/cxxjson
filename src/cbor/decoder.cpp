@@ -27,7 +27,9 @@ namespace
   template <::cxx::codec::base_type<cxx::byte> t>
   constexpr tag_t<t> tag{};
 
-  auto const read_half_float = [](cxx::by_ref<cxx::json::byte_view> bytes, auto sink) {
+  template <typename Sink>
+  [[gnu::flatten]] void read_half_float(cxx::by_ref<cxx::json::byte_view> bytes, Sink sink)
+  {
     if (std::size(bytes.c_ref()) < sizeof(std::uint16_t))
       throw cxx::cbor::truncation_error("not enough data to decode floating point value");
     std::uint16_t x = 0;
@@ -75,7 +77,7 @@ namespace
     double d = u.floating;
     sink(d);
     bytes->remove_prefix(sizeof(std::uint16_t));
-  };
+  }
 
   template <typename Sink>
   cxx::json::byte_view parse(cxx::json::byte_view, Sink, std::size_t = cxx::cbor::max_nesting);
@@ -130,7 +132,7 @@ namespace
   }
 
   template <typename Sink>
-  cxx::json::byte_view chunk(cxx::byte byte, cxx::json::byte_view bytes, Sink sink)
+  [[gnu::flatten]] cxx::json::byte_view chunk(cxx::byte byte, cxx::json::byte_view bytes, Sink sink)
   {
     std::size_t const size = [&] {
       std::size_t n = 0;
@@ -179,8 +181,11 @@ namespace
       return chunk(byte, bytes, sink);
   }
 
-  template <typename Stream>
-  auto const merge_to = [](std::list<cxx::json::byte_view> chunks, std::size_t length, auto sink) {
+  template <typename Stream, typename Sink>
+  [[gnu::flatten]] void merge_to(std::list<cxx::json::byte_view> chunks,
+                                 std::size_t length,
+                                 Sink sink)
+  {
     Stream stream;
     stream.reserve(length);
     for (auto const& item : chunks)
@@ -189,7 +194,7 @@ namespace
       stream.insert(std::end(stream), first, first + std::size(item));
     }
     sink(std::move(stream));
-  };
+  }
 
   template <typename Sink>
   cxx::json::byte_view parse(tag_t<initial_byte::type::unicode>,
@@ -209,7 +214,8 @@ namespace
   }
 
   template <typename T>
-  auto const emplace_to = [](cxx::by_ref<T> target, std::string_view key = std::string_view()) {
+  [[gnu::flatten]] auto emplace_to(cxx::by_ref<T> target, std::string_view key = std::string_view())
+  {
     using key_type = cxx::json::dictionary::key_type;
     auto impl = [ref = cxx::by_ref(target), key](auto&& x) {
       (void)key;
@@ -236,7 +242,7 @@ namespace
           merge_to<cxx::json::byte_stream>(chunks, length, impl);
         },
         impl};
-  };
+  }
 
   template <typename Collection, typename Sink, typename Collector>
   cxx::json::byte_view collect(cxx::byte byte,
